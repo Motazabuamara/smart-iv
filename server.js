@@ -19,6 +19,29 @@ const PATIENTS_FILE = "patients.json";
 
 const SECRET_KEY = process.env.SECRET_KEY;
 
+
+function addLog(action, details = {}) {
+  let logs = [];
+
+  try {
+    logs = JSON.parse(fs.readFileSync(LOGS_FILE));
+  } catch (err) {
+    logs = [];
+  }
+
+  logs.push({
+    action,
+    ...details,
+    time: new Date().toISOString()
+  });
+
+  fs.writeFileSync(LOGS_FILE, JSON.stringify(logs, null, 2));
+}
+
+
+
+
+
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -42,19 +65,6 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-function addLog(action, performedBy, target, ip) {
-  const logs = JSON.parse(fs.readFileSync(LOGS_FILE));
-
-  logs.push({
-    action,
-    performedBy,
-    target,
-    ip,
-    time: new Date().toISOString()
-  });
-
-  fs.writeFileSync(LOGS_FILE, JSON.stringify(logs, null, 2));
-}
 
 
 app.get("/admin-data", authenticateToken, requireAdmin, (req, res) => {
@@ -106,12 +116,12 @@ app.post("/admin/users", authenticateToken, requireAdmin, (req, res) => {
 
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 
-    addLog(
-      "CREATE_USER",
-      req.user.username,
-      username,
-      req.ip
-    );
+    addLog("CREATE_USER", {
+  performedBy: req.user.username,
+  target: username,
+  ip: req.ip
+});
+
 
     res.json({ message: "User created successfully 🔥" });
 
@@ -148,12 +158,13 @@ app.delete("/admin/users/:username", authenticateToken, requireAdmin, (req, res)
 
     fs.writeFileSync(USERS_FILE, JSON.stringify(filteredUsers, null, 2));
 
-    addLog(
-      "DELETE_USER",
-      req.user.username,
-      usernameToDelete,
-      req.ip
-    );
+    addLog("DELETE_USER", {
+  performedBy: req.user.username,
+  target: usernameToDelete,
+  ip: req.ip
+});
+
+
 
     res.json({ message: "User deleted successfully 🔥" });
 
@@ -176,7 +187,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 
-app.use(express.static("public"));
+
 
 
 // ================= LOGIN =================
@@ -201,6 +212,11 @@ app.post("/api/login", async (req, res) => {
   }
 
   console.log("✅ LOGIN SUCCESS:", username);
+  addLog("LOGIN", {
+  username: user.username,
+  ip: req.ip
+});
+
 
   const token = jwt.sign(
   { 
@@ -243,12 +259,13 @@ app.post("/api/patients", authenticateToken, (req, res) => {
   patients.push(newPatient);
 
   fs.writeFileSync(PATIENTS_FILE, JSON.stringify(patients, null, 2));
- addLog(
-  "CREATE_PATIENT",
-  req.user.username,
-  newPatient.name,
-  req.ip
-);
+ addLog("CREATE_PATIENT", {
+  performedBy: req.user.username,
+  target: newPatient.name,
+  ip: req.ip
+});
+
+
 
   res.json({ success: true });
 });
@@ -302,12 +319,12 @@ patients = patients.map(p => {
 
     p.status = p.percentage <= 0 ? "Finished" : "Running";
 
-    addLog(
-      "UPDATE_PATIENT",
-      req.user.username,
-      id,
-      req.ip
-    );
+    addLog("UPDATE_PATIENT", {
+  performedBy: req.user.username,
+  target: id,
+  ip: req.ip
+});
+
   }
 
   return p;
@@ -315,12 +332,7 @@ patients = patients.map(p => {
 
 
   fs.writeFileSync(PATIENTS_FILE, JSON.stringify(patients, null, 2));
-  addLog(
-  "UPDATE_PATIENT",
-  req.user.username,
-  id,
-  req.ip
-);
+  
 
   res.json({ success: true });
 });
@@ -336,20 +348,16 @@ app.delete("/api/patients/:id", authenticateToken, (req, res) => {
   patients = patients.filter(p => p.id !== id);
 
   fs.writeFileSync(PATIENTS_FILE, JSON.stringify(patients, null, 2));
-  addLog(
-  "DELETE_PATIENT",
-  req.user.username,
-  id,
-  req.ip
-);
+  addLog("DELETE_PATIENT", {
+  performedBy: req.user.username,
+  target: id,
+  ip: req.ip
+});
+
+
 
   res.json({ success: true });
 });
-
-app.listen(process.env.PORT || 3000,
- () =>
-  console.log("🚀 Smart IV Server running → http://localhost:3000/login.html")
-);
 
 
 // ================= NEW IV BAG =================
@@ -374,12 +382,12 @@ app.post("/api/patients/:id/new-bag", authenticateToken, (req, res) => {
         p.fluid = fluid;
       }
 
-      addLog(
-        "NEW_IV_BAG",
-        req.user.username,
-        id,
-        req.ip
-      );
+      addLog("NEW_IV_BAG", {
+  performedBy: req.user.username,
+  target: id,
+  ip: req.ip
+});
+
     }
 
     return p;
@@ -414,12 +422,12 @@ app.post("/api/sensor", authenticateToken, (req, res) => {
       }
 
       // 🔥 اللوج الصح
-      addLog(
-        "SENSOR_UPDATE",
-        req.user.username,
-        patientId,
-        req.ip
-      );
+     addLog("SENSOR_UPDATE", {
+  performedBy: req.user.username,
+  target: patientId,
+  ip: req.ip
+});
+
     }
 
     return p;

@@ -4,12 +4,15 @@ const fs = require("fs");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-
+const path = require("path");
 const app = express();   // 👈 أول شي نعرّف app
 
 app.use(cors());         // 👈 بعدها نستخدمه
 app.use(express.json());
-
+app.use(express.static("public"));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
 const USERS_FILE = "users.json";
 const LOGS_FILE = "logs.json";
 const PATIENTS_FILE = "patients.json";

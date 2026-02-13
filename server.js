@@ -7,6 +7,9 @@ const bcrypt = require("bcrypt");
 const path = require("path");
 const app = express();   // 👈 أول شي نعرّف app
 
+
+const mongoose = require("mongoose");
+
 app.use(cors());         // 👈 بعدها نستخدمه
 app.use(express.json());
 app.use(express.static("public"));
@@ -18,6 +21,10 @@ const LOGS_FILE = "logs.json";
 const PATIENTS_FILE = "patients.json";
 
 const SECRET_KEY = process.env.SECRET_KEY;
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => console.error("❌ MongoDB Error:", err));
 
 
 function addLog(action, details = {}) {

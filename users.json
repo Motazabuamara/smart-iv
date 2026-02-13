@@ -1,0 +1,20 @@
+[
+  {
+    "username": "motaz",
+    "password": "$2b$10$eGciZOd6HgTRbwy5/RknT.fekZzwpmi7iHScaewaPp5bguzAg8Kfa",
+    "name": "MOTAZ",
+    "role": "admin"
+  },
+  {
+    "username": "testuser2",
+    "password": "$2b$10$thOr/kjLZrFUM7cZzZE4nuN79d1706ggbnqU1dU.nYPoVnU2MSXom",
+    "name": "Test User 2",
+    "role": "nurse"
+  },
+  {
+    "username": "32109338039",
+    "password": "$2b$10$tKWOwm2m3faMfq7DKr2qXePNAxhSuQDHWMWC81/X5.Bt35ztpf306",
+    "name": "motaz abu amara",
+    "role": "nurse"
+  }
+]

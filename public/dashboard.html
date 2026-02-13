@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="center">
+
+<div class="card">
+  <h2>Patient Management</h2>
+  <p>Nurse: <strong id="nurseName"></strong></p>
+
+<select id="patients"></select>
+
+  <input id="name" placeholder="Patient Name">
+  <input id="bed" placeholder="Bed Number">
+  <input id="fluid" placeholder="IV Fluid">
+  <input id="totalML" placeholder="Total ML">
+  <hr>
+  <div id="alertBox" class="alertBox" style="display:none;"></div>
+
+<p><strong>IV Fluid:</strong> <span id="displayFluid"></span></p>
+<p><strong>Remaining:</strong> <span id="displayRemaining">-</span> ml</p>
+<p><strong>Percentage:</strong> <span id="displayPercentage">-</span> %</p>
+<p><strong>Status:</strong> <span id="displayStatus">-</span></p>
+
+
+<button id="addBtn">Add</button>
+<button id="newBagBtn">New Bag</button>
+<button id="updateBtn">Update</button>
+<button id="deleteBtn">Delete</button>
+<button id="logoutBtn">Logout</button>
+
+
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+[
+  {
+    "id": 1770847750702,
+    "name": "MOTAZ ABU AMARA",
+    "bed": "77777",
+    "fluid": "9777",
+    "totalML": 300,
+    "remainingML": 0,
+    "percentage": 0,
+    "status": "Finished",
+    "nurse": "Nurse Aisha"
+  },
+  {
+    "id": 1770847773042,
+    "name": "AHMAD ABU AMARA",
+    "bed": "855",
+    "fluid": "3",
+    "totalML": 500,
+    "remainingML": 500,
+    "percentage": 100,
+    "status": "Running",
+    "nurse": "Nurse Aisha"
+  },
+  {
+    "id": 1770922756182,
+    "name": "KALED",
+    "bed": "5",
+    "fluid": "58",
+    "totalML": 150,
+    "remainingML": 300,
+    "percentage": 100,
+    "status": "Running",
+    "nurse": "nurse1"
+  },
+  {
+    "id": 1770922769141,
+    "name": "MAN",
+    "bed": "3",
+    "fluid": "3",
+    "totalML": 300,
+    "remainingML": 300,
+    "percentage": 100,
+    "status": "Running",
+    "nurse": "nurse1"
+  },
+  {
+    "id": 1770923469605,
+    "name": "MOTAZ",
+    "bed": "2",
+    "fluid": "2",
+    "totalML": 300,
+    "remainingML": 300,
+    "percentage": 100,
+    "status": "Running",
+    "nurse": "nurse1"
+  },
+  {
+    "id": 1770927753152,
+    "name": "abdalh",
+    "bed": "g",
+    "fluid": "5",
+    "totalML": 500,
+    "remainingML": 500,
+    "percentage": 100,
+    "status": "Running",
+    "nurse": "motaz"
+  },
+  {
+    "id": 1770931192458,
+    "name": "abood",
+    "bed": "1",
+    "fluid": "1",
+    "totalML": 500,
+    "remainingML": 500,
+    "percentage": 100,
+    "status": "Running",
+    "nurse": "nurse1"
+  },
+  {
+    "id": 1770937188811,
+    "name": "KALED",
+    "bed": "3",
+    "fluid": "4",
+    "totalML": 400,
+    "remainingML": 400,
+    "percentage": 100,
+    "status": "Running",
+    "nurse": "testuser2"
+  },
+  {
+    "id": 1770987615221,
+    "name": "MOTAZ ABU AMARA",
+    "bed": "g",
+    "fluid": "1",
+    "totalML": 100,
+    "remainingML": 100,
+    "percentage": 100,
+    "status": "Running",
+    "nurse": "32109338039"
+  }
+]

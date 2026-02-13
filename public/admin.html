@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel</title>
+  <style>
+    body { font-family: Arial; background: #1f2d3d; color: white; padding: 20px; }
+    h2 { margin-top: 30px; }
+    button { padding: 5px 10px; margin-left: 10px; }
+    .card { background: #2c3e50; padding: 15px; margin: 10px 0; border-radius: 8px; }
+  </style>
+</head>
+<body>
+
+<h1>Admin Panel 👑</h1>
+<h2>Create New User</h2>
+
+<div class="card">
+  <input type="text" id="newUsername" placeholder="Username"><br><br>
+  <input type="text" id="newName" placeholder="Full Name"><br><br>
+  <input type="password" id="newPassword" placeholder="Password"><br><br>
+
+  <select id="newRole">
+    <option value="nurse">Nurse</option>
+    <option value="admin">Admin</option>
+  </select><br><br>
+
+  <button id="createUserBtn">Create User</button>
+</div>
+
+<h2>Users</h2>
+<div id="users"></div>
+
+<h2>Logs</h2>
+<div id="logs"></div>
+
+<button id="logoutBtn">Logout</button>
+
+<script src="admin.js"></script>
+
+</body>
+</html>

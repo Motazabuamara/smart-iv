@@ -73,7 +73,11 @@ function loadLogs() {
     logs.slice().reverse().forEach(log => {
       const div = document.createElement("div");
       div.className = "card";
-      div.innerText = `${log.time} - ${log.performedBy} did ${log.action} on ${log.target}`;
+      const user = log.username || log.performedBy || "system";
+const target = log.target || "-";
+
+div.innerText = `${log.time} - ${user} did ${log.action} on ${target}`;
+
       container.appendChild(div);
     });
   });

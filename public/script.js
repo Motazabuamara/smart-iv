@@ -58,7 +58,8 @@ async function loadPatients() {
     const option = document.createElement("option");
     option.value = p.patientId;
 
-    ooption.textContent = `${p.name} | Bed: ${p.room || "-"} | ID: ${p.patientId}`;
+   option.textContent = `${p.name} | Bed: ${p.room || "-"} | ID: ${p.patientId}`;
+;
 
     select.appendChild(option);
   });

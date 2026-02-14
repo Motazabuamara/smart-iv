@@ -97,7 +97,7 @@ const p = patientsData.find(x => x.patientId === selectedId);
   if (!p) return;
 
   document.getElementById("name").value = p.name ?? "";
-  document.getElementById("bed").value = p.bed ?? "";
+  document.getElementById("bed").value = p.room ?? "";
   document.getElementById("fluid").value = p.fluid ?? "";
   document.getElementById("totalML").value = p.totalML ?? "";
 

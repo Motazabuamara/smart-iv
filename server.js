@@ -348,6 +348,7 @@ app.put("/api/patients/:id", authenticateToken, async (req, res) => {
 
     patient.name = req.body.name || patient.name;
     patient.room = req.body.bed || patient.room;
+    patient.fluid = req.body.fluid || patient.fluid;
 
     patient.remainingML = oldRemaining;
 

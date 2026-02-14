@@ -56,23 +56,26 @@ async function loadPatients() {
 
   patients.forEach(p => {
     const option = document.createElement("option");
-    option.value = p.id;
+    option.value = p.patientId;
+
     option.textContent = p.name || "Unnamed Patient";
     select.appendChild(option);
   });
 
   // رجّع الاختيار السابق إذا موجود
-  if (previousSelected && patients.find(p => p.id == previousSelected)) {
+  if (previousSelected && patients.find(p => p.patientId == previousSelected)) {
     select.value = previousSelected;
   }
 
   // إذا ما في اختيار اختار أول واحد
   if (!select.value && patients.length > 0) {
-    select.value = patients[0].id;
+    select.value = patients[0].patientId;
+
   }
 
   // 🔥 المهم جدًا
-  selectedId = Number(select.value);
+  selectedId = select.value;   // بدون Number
+
 
   selectPatient();
 }
@@ -87,9 +90,10 @@ function selectPatient() {
   const sel = document.getElementById("patients");
   if (!sel || !sel.value) return;
 
-  selectedId = Number(sel.value);
+  selectedId = sel.value;
 
-  const p = patientsData.find(x => x.id === selectedId);
+const p = patientsData.find(x => x.patientId === selectedId);
+
   if (!p) return;
 
   document.getElementById("name").value = p.name ?? "";

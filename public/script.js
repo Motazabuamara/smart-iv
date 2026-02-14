@@ -60,7 +60,7 @@ async function loadPatients(keepSelection = false) {
     const option = document.createElement("option");
     option.value = p.patientId;
     option.textContent =
-      `${p.name} | Bed: ${p.room || "-"} | ID: ${p.patientId}`;
+      `${p.name} | Bed: ${p.room || "-"}`;
     select.appendChild(option);
   });
 
@@ -288,7 +288,9 @@ if (nurseElement) {
   await loadPatients();
 
   if (!autoRefreshStarted) {
-    setInterval(loadPatients, 30000);
+    setInterval(() => {
+  loadPatients(true);
+}, 30000);
     autoRefreshStarted = true;
   }
 

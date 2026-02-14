@@ -248,14 +248,11 @@ app.post("/api/login", async (req, res) => {
 
 console.log("✅ LOGIN SUCCESS:", username);
 
-console.log("Before addLog");
-
-await addLog("LOGIN_TEST", {
+await addLog("LOGIN", {
   performedBy: user.username,
   ip: req.ip
 });
 
-console.log("After addLog");
 
 const token = jwt.sign(
   { 

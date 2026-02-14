@@ -275,28 +275,41 @@ app.post("/api/login", async (req, res) => {
 // ================= ADD PATIENT =================
 app.post("/api/patients", authenticateToken, async (req, res) => {
   try {
+        console.log("ADD PATIENT BODY:", req.body);
 
-  const existing = await Patient.findOne({
-  room: req.body.bed,
-  nurse: req.user.username
-});
+    const bed = req.body.bed?.trim();
 
-if (existing) {
-  return res.status(400).json({ message: "Bed already occupied" });
-}
+   if (
+  !req.body.name?.trim() ||
+  !bed ||
+  isNaN(Number(req.body.totalML)) ||
+  Number(req.body.totalML) <= 0
+)
+ {
 
+      return res.status(400).json({ message: "All fields required" });
+    }
+
+    const existing = await Patient.findOne({
+      room: bed,
+      nurse: req.user.username
+    });
+
+    if (existing) {
+      return res.status(400).json({ message: "Bed already occupied" });
+    }
 
     const newPatient = await Patient.create({
-  name: req.body.name,
-  patientId: Date.now().toString(),
-  room: req.body.bed,
-  fluid: req.body.fluid,
-  totalML: Number(req.body.totalML),
-  remainingML: Number(req.body.totalML),
-  percentage: 100,
-  status: "Running",
-  nurse: req.user.username
-});
+      name: req.body.name.trim(),
+      patientId: Date.now().toString(),
+      room: bed,
+      fluid: req.body.fluid || "",
+      totalML: Number(req.body.totalML),
+      remainingML: Number(req.body.totalML),
+      percentage: 100,
+      status: "Running",
+      nurse: req.user.username
+    });
 
     await addLog("CREATE_PATIENT", {
       performedBy: req.user.username,
@@ -311,7 +324,6 @@ if (existing) {
     res.status(500).json({ success: false });
   }
 });
-
 
 
 

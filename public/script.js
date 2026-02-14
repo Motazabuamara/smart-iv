@@ -31,11 +31,8 @@ async function login() {
 
 async function loadPatients() {
   const token = localStorage.getItem("token");
-
   const select = document.getElementById("patients");
   if (!select) return;
-
-  const previousSelected = select.value;
 
   const res = await fetch("/api/patients", {
     headers: {
@@ -51,36 +48,33 @@ async function loadPatients() {
   const patients = await res.json();
   patientsData = patients;
 
-  // فضّي القائمة
   select.innerHTML = "";
+
+  // ✅ خيار افتراضي
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = "-- Add New Patient --";
+  select.appendChild(defaultOption);
 
   patients.forEach(p => {
     const option = document.createElement("option");
     option.value = p.patientId;
-
-   option.textContent = `${p.name} | Bed: ${p.room || "-"} | ID: ${p.patientId}`;
-;
-
+    option.textContent =
+      `${p.name} | Bed: ${p.room || "-"} | ID: ${p.patientId}`;
     select.appendChild(option);
   });
 
-  // رجّع الاختيار السابق إذا موجود
-  if (previousSelected && patients.find(p => p.patientId == previousSelected)) {
-    select.value = previousSelected;
-  }
+  // الصفحة تبدأ فاضية
+  select.value = "";
+  selectedId = null;
 
-  // إذا ما في اختيار اختار أول واحد
-  if (!select.value && patients.length > 0) {
-    select.value = patients[0].patientId;
-
-  }
-
-  // 🔥 المهم جدًا
-  selectedId = select.value;   // بدون Number
-
-
-  selectPatient();
+  // ✅ نفرغ الحقول
+  document.getElementById("name").value = "";
+  document.getElementById("bed").value = "";
+  document.getElementById("fluid").value = "";
+  document.getElementById("totalML").value = "";
 }
+
 
 
 
@@ -90,12 +84,43 @@ async function loadPatients() {
 
 function selectPatient() {
   const sel = document.getElementById("patients");
-  if (!sel || !sel.value) return;
 
+  const addBtn = document.getElementById("addBtn");
+  const updateBtn = document.getElementById("updateBtn");
+  const deleteBtn = document.getElementById("deleteBtn");
+
+  if (!sel || !sel.value) {
+    selectedId = null;
+
+    // 🔥 وضع الإضافة
+    addBtn.style.display = "inline-block";
+    updateBtn.style.display = "none";
+    deleteBtn.style.display = "none";
+
+    document.getElementById("name").value = "";
+    document.getElementById("bed").value = "";
+    document.getElementById("fluid").value = "";
+    document.getElementById("totalML").value = "";
+
+    document.getElementById("displayFluid").innerText = "-";
+    document.getElementById("displayRemaining").innerText = "-";
+    document.getElementById("displayPercentage").innerText = "-";
+    document.getElementById("displayStatus").innerText = "-";
+
+    const alertBox = document.getElementById("alertBox");
+    alertBox.style.display = "none";
+
+    return;
+  }
+
+  // 🔥 وضع التعديل
   selectedId = sel.value;
 
-const p = patientsData.find(x => x.patientId === selectedId);
+  addBtn.style.display = "none";
+  updateBtn.style.display = "inline-block";
+  deleteBtn.style.display = "inline-block";
 
+  const p = patientsData.find(x => x.patientId === selectedId);
   if (!p) return;
 
   document.getElementById("name").value = p.name ?? "";
@@ -135,10 +160,11 @@ const p = patientsData.find(x => x.patientId === selectedId);
 
 
 
+
 async function addPatient() {
   const token = localStorage.getItem("token");
 
-  await fetch("/api/patients", {
+  const res = await fetch("/api/patients", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -152,8 +178,18 @@ async function addPatient() {
     })
   });
 
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.message || "Error adding patient");
+    return;
+  }
+
+  alert("Patient added successfully ✅");
+
   await loadPatients();
 }
+
 
 
 

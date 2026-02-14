@@ -63,25 +63,48 @@ function deleteUser(username) {
 // تحميل اللوجات
 function loadLogs() {
   fetch("/admin/logs", {
-    headers: { "Authorization": "Bearer " + token }
+    headers: {
+      "Authorization": "Bearer " + localStorage.getItem("token")
+    }
   })
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) {
+      console.error("Logs request failed:", res.status);
+      return [];
+    }
+    return res.json();
+  })
   .then(logs => {
+
+    console.log("LOGS RECEIVED:", logs);   // 🔥 مهم للتشخيص
+
     const container = document.getElementById("logs");
     container.innerHTML = "";
+
+    if (!logs || logs.length === 0) {
+      container.innerText = "No logs available";
+      return;
+    }
 
     logs.slice().reverse().forEach(log => {
       const div = document.createElement("div");
       div.className = "card";
-      const user = log.username || log.performedBy || "system";
-const target = log.target || "-";
 
-div.innerText = `${log.time} - ${user} did ${log.action} on ${target}`;
+      const user = log.performedBy || "system";
+      const target = log.target || "-";
+
+      const time = new Date(log.createdAt).toLocaleString();
+
+      div.innerText = `${time} - ${user} did ${log.action} on ${target}`;
 
       container.appendChild(div);
     });
+  })
+  .catch(err => {
+    console.error("Logs error:", err);
   });
 }
+
 
 // Logout
 document.getElementById("logoutBtn")
@@ -105,7 +128,8 @@ document.getElementById("createUserBtn")
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
+       "Authorization": "Bearer " + localStorage.getItem("token")
+
       },
       body: JSON.stringify({ username, password, name, role })
     })

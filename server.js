@@ -243,21 +243,23 @@ app.post("/api/login", async (req, res) => {
   const valid = await bcrypt.compare(password, user.password);
 
   if (!valid) {
-    console.log("❌ LOGIN FAILED (wrong password):", username);
-    return res.status(401).json({ success: false });
-  }
+  return res.status(401).json({ success: false });
+}
 
-  console.log("✅ LOGIN SUCCESS:", username);
-  await addLog("LOGIN", {
+console.log("✅ LOGIN SUCCESS:", username);
+
+console.log("Before addLog");
+
+await addLog("LOGIN_TEST", {
   performedBy: user.username,
   ip: req.ip
 });
 
+console.log("After addLog");
 
-
-  const token = jwt.sign(
+const token = jwt.sign(
   { 
-    username: user.username, 
+    username: user.username,
     name: user.name,
     role: user.role || "nurse"
   },

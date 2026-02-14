@@ -29,7 +29,7 @@ async function login() {
 
 
 
-async function loadPatients() {
+async function loadPatients(keepSelection = false) {
   const token = localStorage.getItem("token");
   const select = document.getElementById("patients");
   if (!select) return;
@@ -64,20 +64,33 @@ async function loadPatients() {
     select.appendChild(option);
   });
 
-  // الصفحة تبدأ فاضية
+ if (
+  keepSelection &&
+  selectedId &&
+  patients.some(p => p.patientId === selectedId)
+) {
+  select.value = selectedId;
+  selectPatient();
+} else {
   select.value = "";
   selectedId = null;
 
-  // ✅ نفرغ الحقول
   document.getElementById("name").value = "";
   document.getElementById("bed").value = "";
   document.getElementById("fluid").value = "";
   document.getElementById("totalML").value = "";
+
+  document.getElementById("displayFluid").innerText = "-";
+  document.getElementById("displayRemaining").innerText = "-";
+  document.getElementById("displayPercentage").innerText = "-";
+  document.getElementById("displayStatus").innerText = "-";
+
+  const alertBox = document.getElementById("alertBox");
+  alertBox.style.display = "none";
 }
 
 
-
-
+}
 
 
 
@@ -216,7 +229,8 @@ async function updatePatient() {
     })
   });
 
-  await loadPatients();
+ await loadPatients(true);
+
 }
 
 
@@ -313,7 +327,6 @@ if (select) {
 }
 });
 
-
 const newBagBtn = document.getElementById("newBagBtn");
 
 if (newBagBtn) {
@@ -327,7 +340,7 @@ if (newBagBtn) {
     const newTotal = prompt("Enter new IV total (ml):");
     if (!newTotal) return;
 
-    await fetch(`/api/patients/${selectedId}/new-bag`, {
+    const res = await fetch(`/api/patients/${selectedId}/new-bag`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -338,6 +351,12 @@ if (newBagBtn) {
       })
     });
 
-    loadPatients();
+    if (!res.ok) {
+      alert("Failed to update IV bag");
+      return;
+    }
+
+    await loadPatients(true);
+
   });
 }

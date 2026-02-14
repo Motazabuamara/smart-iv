@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const fs = require("fs");
+
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
@@ -10,15 +10,49 @@ const app = express();   // 👈 أول شي نعرّف app
 
 const mongoose = require("mongoose");
 
+const userSchema = new mongoose.Schema({
+  username: { type: String, unique: true },
+  password: String,
+  name: String,
+  role: { type: String, default: "nurse" }
+}, { timestamps: true });
+
+const User = mongoose.model("User", userSchema);
+
+const logSchema = new mongoose.Schema({
+  action: String,
+  performedBy: String,
+  target: String,
+  ip: String
+}, { timestamps: true });
+
+
+const Log = mongoose.model("Log", logSchema);
+
+const patientSchema = new mongoose.Schema({
+  name: String,
+  patientId: String,
+  room: String,
+  fluid: String,
+  totalML: Number,
+  remainingML: Number,
+  percentage: Number,
+  status: String,
+  nurse: String
+}, { timestamps: true });
+
+
+const Patient = mongoose.model("Patient", patientSchema);
+
+
+
 app.use(cors());         // 👈 بعدها نستخدمه
 app.use(express.json());
 app.use(express.static("public"));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
-const USERS_FILE = "users.json";
-const LOGS_FILE = "logs.json";
-const PATIENTS_FILE = "patients.json";
+
 
 const SECRET_KEY = process.env.SECRET_KEY;
 
@@ -27,22 +61,15 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error("❌ MongoDB Error:", err));
 
 
-function addLog(action, details = {}) {
-  let logs = [];
-
+async function addLog(action, details = {}) {
   try {
-    logs = JSON.parse(fs.readFileSync(LOGS_FILE));
+    await Log.create({
+      action,
+      ...details
+    });
   } catch (err) {
-    logs = [];
+    console.error("Log error:", err);
   }
-
-  logs.push({
-    action,
-    ...details,
-    time: new Date().toISOString()
-  });
-
-  fs.writeFileSync(LOGS_FILE, JSON.stringify(logs, null, 2));
 }
 
 
@@ -78,23 +105,24 @@ app.get("/admin-data", authenticateToken, requireAdmin, (req, res) => {
   res.json({ message: "Welcome Admin 🔥" });
 });
 
-app.get("/admin/users", authenticateToken, requireAdmin, (req, res) => {
+app.get("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const users = JSON.parse(fs.readFileSync(USERS_FILE));
-    
-    // نخفي الباسورد للأمان
-    const safeUsers = users.map(user => ({
-      username: user.username,
-      name: user.name,
-      role: user.role
-    }));
 
-    res.json(safeUsers);
+    const users = await User.find({}, "-password"); 
+    // -password يعني استثناء حقل الباسورد
+
+    res.json(users);
+
   } catch (err) {
     res.status(500).json({ message: "Error reading users" });
   }
 });
-app.post("/admin/users", authenticateToken, requireAdmin, (req, res) => {
+
+
+
+
+
+app.post("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { username, password, name, role } = req.body;
 
@@ -102,33 +130,26 @@ app.post("/admin/users", authenticateToken, requireAdmin, (req, res) => {
       return res.status(400).json({ message: "All fields required" });
     }
 
-    let users = JSON.parse(fs.readFileSync(USERS_FILE));
-
-    // تأكد إنه ما في نفس اليوزر
-    if (users.find(u => u.username === username)) {
+    // تحقق إذا المستخدم موجود
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
       return res.status(400).json({ message: "Username already exists" });
     }
 
-   
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = {
+    await User.create({
       username,
       password: hashedPassword,
       name,
       role
-    };
+    });
 
-    users.push(newUser);
-
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-
-    addLog("CREATE_USER", {
-  performedBy: req.user.username,
-  target: username,
-  ip: req.ip
-});
-
+    await addLog("CREATE_USER", {
+      performedBy: req.user.username,
+      target: username,
+      ip: req.ip
+    });
 
     res.json({ message: "User created successfully 🔥" });
 
@@ -137,41 +158,41 @@ app.post("/admin/users", authenticateToken, requireAdmin, (req, res) => {
   }
 });
 
-app.get("/admin/logs", authenticateToken, requireAdmin, (req, res) => {
+
+
+
+
+
+app.get("/admin/logs", authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const logs = JSON.parse(fs.readFileSync(LOGS_FILE));
+    const logs = await Log.find().sort({ createdAt: -1 });
     res.json(logs);
   } catch (err) {
     res.status(500).json({ message: "Error reading logs" });
   }
 });
 
-app.delete("/admin/users/:username", authenticateToken, requireAdmin, (req, res) => {
+
+app.delete("/admin/users/:username", authenticateToken, requireAdmin, async (req, res) => {
   try {
     const usernameToDelete = req.params.username;
 
-    let users = JSON.parse(fs.readFileSync(USERS_FILE));
-
-    // نمنع حذف الأدمن نفسه
+    // منع حذف نفسه
     if (usernameToDelete === req.user.username) {
       return res.status(400).json({ message: "You cannot delete yourself" });
     }
 
-    const filteredUsers = users.filter(user => user.username !== usernameToDelete);
+    const deletedUser = await User.findOneAndDelete({ username: usernameToDelete });
 
-    if (filteredUsers.length === users.length) {
+    if (!deletedUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    fs.writeFileSync(USERS_FILE, JSON.stringify(filteredUsers, null, 2));
-
-    addLog("DELETE_USER", {
-  performedBy: req.user.username,
-  target: usernameToDelete,
-  ip: req.ip
-});
-
-
+    await addLog("DELETE_USER", {
+      performedBy: req.user.username,
+      target: usernameToDelete,
+      ip: req.ip
+    });
 
     res.json({ message: "User deleted successfully 🔥" });
 
@@ -179,6 +200,7 @@ app.delete("/admin/users/:username", authenticateToken, requireAdmin, (req, res)
     res.status(500).json({ message: "Error deleting user" });
   }
 });
+
 
 
 
@@ -202,9 +224,8 @@ app.post("/api/login", async (req, res) => {
 
   const { username, password } = req.body;
 
-  const users = JSON.parse(fs.readFileSync(USERS_FILE));
+  const user = await User.findOne({ username });
 
-  const user = users.find(u => u.username === username);
 
   if (!user) {
     console.log("❌ LOGIN FAILED (no user):", username);
@@ -219,10 +240,11 @@ app.post("/api/login", async (req, res) => {
   }
 
   console.log("✅ LOGIN SUCCESS:", username);
-  addLog("LOGIN", {
-  username: user.username,
+  await addLog("LOGIN", {
+  performedBy: user.username,
   ip: req.ip
 });
+
 
 
   const token = jwt.sign(
@@ -246,204 +268,222 @@ app.post("/api/login", async (req, res) => {
 
 
 // ================= ADD PATIENT =================
-app.post("/api/patients", authenticateToken, (req, res) => {
-  console.log("ADD PATIENT:", req.body);
-
-  let patients = JSON.parse(fs.readFileSync(PATIENTS_FILE));
-
-  const newPatient = {
-  id: Date.now(),
+app.post("/api/patients", authenticateToken, async (req, res) => {
+  try {
+    const newPatient = await Patient.create({
   name: req.body.name,
-  bed: req.body.bed,
-  fluid: req.body.fluid,
+  patientId: Date.now().toString(),
+  room: req.body.bed,
   totalML: Number(req.body.totalML),
   remainingML: Number(req.body.totalML),
   percentage: 100,
   status: "Running",
-  nurse: req.user.username   // 🔥 مهم
-};
+  nurse: req.user.username
+});
 
-  patients.push(newPatient);
+    await addLog("CREATE_PATIENT", {
+      performedBy: req.user.username,
+      target: newPatient.name,
+      ip: req.ip
+    });
 
-  fs.writeFileSync(PATIENTS_FILE, JSON.stringify(patients, null, 2));
- addLog("CREATE_PATIENT", {
-  performedBy: req.user.username,
-  target: newPatient.name,
-  ip: req.ip
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Create patient error:", err);
+    res.status(500).json({ success: false });
+  }
 });
 
 
 
-  res.json({ success: true });
-});
+
+
+
+
+
 
 
 
 // ================= GET PATIENTS =================
-app.get("/api/patients", authenticateToken, (req, res) => {
-  const patients = JSON.parse(fs.readFileSync(PATIENTS_FILE));
+app.get("/api/patients", authenticateToken, async (req, res) => {
+  try {
+    const nurseUsername = req.user.username;
 
-  const nurseUsername = req.user.username;
+    const nursePatients = await Patient.find({
+      nurse: nurseUsername
+    }).sort({ createdAt: -1 });
 
-  const nursePatients = patients.filter(
-    p => p.nurse === nurseUsername
-  );
+    res.json(nursePatients);
 
-  res.json(nursePatients);
+  } catch (err) {
+    console.error("Get patients error:", err);
+    res.status(500).json({ success: false });
+  }
 });
 
 
-// ================= ADD =================
+
 
 
 // ================= UPDATE =================
-app.put("/api/patients/:id", authenticateToken, (req, res) => {
-  console.log("UPDATE PATIENT:", req.params.id);
+app.put("/api/patients/:id", authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
 
-  const id = Number(req.params.id);
-  let patients = JSON.parse(fs.readFileSync(PATIENTS_FILE));
-patients = patients.map(p => {
+    const patient = await Patient.findOne({
+      patientId: id,
+      nurse: req.user.username
+    });
 
-  if (p.id === id && p.nurse === req.user.username) {
-
-    const oldRemaining = p.remainingML;
-
-    if (req.body.totalML) {
-      p.totalML = Number(req.body.totalML);
+    if (!patient) {
+      return res.status(404).json({ success: false });
     }
 
-    p.name = req.body.name || p.name;
-    p.bed = req.body.bed || p.bed;
-    p.fluid = req.body.fluid || p.fluid;
+    const oldRemaining = patient.remainingML;
 
-    // نحافظ على remaining القديم
-    p.remainingML = oldRemaining;
+    if (req.body.totalML) {
+      patient.totalML = Number(req.body.totalML);
+    }
 
-    // إعادة الحساب
-    p.percentage = Math.round(
-      (p.remainingML / p.totalML) * 100
+    patient.name = req.body.name || patient.name;
+    patient.room = req.body.bed || patient.room;
+
+    patient.remainingML = oldRemaining;
+
+    patient.percentage = Math.round(
+      (patient.remainingML / patient.totalML) * 100
     );
 
-    p.status = p.percentage <= 0 ? "Finished" : "Running";
+    patient.status =
+      patient.percentage <= 0 ? "Finished" : "Running";
 
-    addLog("UPDATE_PATIENT", {
-  performedBy: req.user.username,
-  target: id,
-  ip: req.ip
-});
+    await patient.save();
 
+    await addLog("UPDATE_PATIENT", {
+      performedBy: req.user.username,
+      target: id,
+      ip: req.ip
+    });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ success: false });
   }
-
-  return p;
 });
 
-
-  fs.writeFileSync(PATIENTS_FILE, JSON.stringify(patients, null, 2));
-  
-
-  res.json({ success: true });
-});
 
 
 
 // ================= DELETE =================
-app.delete("/api/patients/:id", authenticateToken, (req, res) => {
-  console.log("DELETE PATIENT:", req.params.id);
-  const id = Number(req.params.id);
-  let patients = JSON.parse(fs.readFileSync(PATIENTS_FILE));
+app.delete("/api/patients/:id", authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
 
-  patients = patients.filter(p => p.id !== id);
+    const deletedPatient = await Patient.findOneAndDelete({
+      patientId: id,
+      nurse: req.user.username
+    });
 
-  fs.writeFileSync(PATIENTS_FILE, JSON.stringify(patients, null, 2));
-  addLog("DELETE_PATIENT", {
-  performedBy: req.user.username,
-  target: id,
-  ip: req.ip
-});
+    if (!deletedPatient) {
+      return res.status(404).json({ success: false, message: "Patient not found" });
+    }
 
+    await addLog("DELETE_PATIENT", {
+      performedBy: req.user.username,
+      target: id,
+      ip: req.ip
+    });
 
+    res.json({ success: true });
 
-  res.json({ success: true });
+  } catch (err) {
+    console.error("Delete patient error:", err);
+    res.status(500).json({ success: false });
+  }
 });
 
 
 // ================= NEW IV BAG =================
 
-app.post("/api/patients/:id/new-bag", authenticateToken, (req, res) => {
+app.post("/api/patients/:id/new-bag", authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { totalML, fluid } = req.body;
 
-  const id = Number(req.params.id);
-  const { totalML, fluid } = req.body;
+    const patient = await Patient.findOne({
+      patientId: id,
+      nurse: req.user.username
+    });
 
-  let patients = JSON.parse(fs.readFileSync(PATIENTS_FILE));
-
-  patients = patients.map(p => {
-
-    if (p.id === id && p.nurse === req.user.username) {
-
-      p.totalML = Number(totalML);
-      p.remainingML = Number(totalML);
-      p.percentage = 100;
-      p.status = "Running";
-
-      if (fluid) {
-        p.fluid = fluid;
-      }
-
-      addLog("NEW_IV_BAG", {
-  performedBy: req.user.username,
-  target: id,
-  ip: req.ip
-});
-
+    if (!patient) {
+      return res.status(404).json({ success: false, message: "Patient not found" });
     }
 
-    return p;
-  });
+    patient.totalML = Number(totalML);
+    patient.remainingML = Number(totalML);
+    patient.percentage = 100;
+    patient.status = "Running";
 
-  fs.writeFileSync(PATIENTS_FILE, JSON.stringify(patients, null, 2));
+    if (fluid) {
+  patient.fluid = fluid;
+}
+    await patient.save();
 
-  res.json({ success: true });
+    await addLog("NEW_IV_BAG", {
+      performedBy: req.user.username,
+      target: id,
+      ip: req.ip
+    });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("New bag error:", err);
+    res.status(500).json({ success: false });
+  }
 });
 
 // ================= SENSOR UPDATE =================
-app.post("/api/sensor", authenticateToken, (req, res) => {
-  console.log("SENSOR DATA:", req.body);
+app.post("/api/sensor", authenticateToken, async (req, res) => {
+  try {
+    const { patientId, weight } = req.body;
 
-  const { patientId, weight } = req.body;
+    const patient = await Patient.findOne({
+      patientId: patientId,
+      nurse: req.user.username
+    });
 
-  let patients = JSON.parse(fs.readFileSync(PATIENTS_FILE));
-
-  patients = patients.map(p => {
-
-    if (p.id == patientId && p.nurse === req.user.username) {
-
-      p.remainingML = Number(weight);
-      p.percentage = Math.round(
-        (Number(weight) / Number(p.totalML)) * 100
-      );
-
-      if (p.percentage <= 0) {
-        p.status = "Finished";
-      } else {
-        p.status = "Running";
-      }
-
-      // 🔥 اللوج الصح
-     addLog("SENSOR_UPDATE", {
-  performedBy: req.user.username,
-  target: patientId,
-  ip: req.ip
-});
-
+    if (!patient) {
+      return res.status(404).json({ success: false, message: "Patient not found" });
     }
 
-    return p;
-  });
+    patient.remainingML = Number(weight);
 
-  fs.writeFileSync(PATIENTS_FILE, JSON.stringify(patients, null, 2));
+    patient.percentage = Math.round(
+      (patient.remainingML / patient.totalML) * 100
+    );
 
-  res.json({ success: true });
+    patient.status = patient.percentage <= 0 ? "Finished" : "Running";
+
+    await patient.save();
+
+    await addLog("SENSOR_UPDATE", {
+      performedBy: req.user.username,
+      target: patientId,
+      ip: req.ip
+    });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Sensor update error:", err);
+    res.status(500).json({ success: false });
+  }
 });
+
 
 const PORT = process.env.PORT || 5000;
 

@@ -278,28 +278,30 @@ if (select) {
 });
 
 
-document.getElementById("newBagBtn").addEventListener("click", async () => {
+const newBagBtn = document.getElementById("newBagBtn");
 
-  if (!selectedId) {
-    alert("Select patient first");
-    return;
-  }
+if (newBagBtn) {
+  newBagBtn.addEventListener("click", async () => {
 
-  const newTotal = prompt("Enter new IV total (ml):");
+    if (!selectedId) {
+      alert("Select patient first");
+      return;
+    }
 
-  if (!newTotal) return;
+    const newTotal = prompt("Enter new IV total (ml):");
+    if (!newTotal) return;
 
-  await fetch(`/api/patients/${selectedId}/new-bag`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + localStorage.getItem("token")
-    },
-    body: JSON.stringify({
-      totalML: Number(newTotal)
-    })
+    await fetch(`/api/patients/${selectedId}/new-bag`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + localStorage.getItem("token")
+      },
+      body: JSON.stringify({
+        totalML: Number(newTotal)
+      })
+    });
+
+    loadPatients();
   });
-
-  loadPatients(); // يعيد تحميل البيانات
-});
-
+}

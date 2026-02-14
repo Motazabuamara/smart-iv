@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const path = require("path");
 const app = express();   // 👈 أول شي نعرّف app
-
+app.set("trust proxy", 1);   // 🔥 حل مشكلة Render + rate-limit
 
 const mongoose = require("mongoose");
 

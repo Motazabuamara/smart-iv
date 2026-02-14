@@ -62,15 +62,23 @@ mongoose.connect(process.env.MONGO_URI)
 
 
 async function addLog(action, details = {}) {
+
+  console.log("🔥 ADDLOG CALLED:", action);
+
   try {
-    await Log.create({
+
+    const created = await Log.create({
       action,
       ...details
     });
+
+    console.log("✅ LOG SAVED:", created._id);
+
   } catch (err) {
-    console.error("Log error:", err);
+    console.error("❌ Log error:", err);
   }
 }
+
 
 
 

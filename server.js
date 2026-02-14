@@ -267,13 +267,29 @@ app.post("/api/login", async (req, res) => {
 });
 
 
+
+
+
+
+
 // ================= ADD PATIENT =================
 app.post("/api/patients", authenticateToken, async (req, res) => {
   try {
+
+    const existing = await Patient.findOne({
+  name: req.body.name,
+  nurse: req.user.username
+});
+
+if (existing) {
+  return res.status(400).json({ message: "Patient already exists" });
+}
+
     const newPatient = await Patient.create({
   name: req.body.name,
   patientId: Date.now().toString(),
   room: req.body.bed,
+  fluid: req.body.fluid,
   totalML: Number(req.body.totalML),
   remainingML: Number(req.body.totalML),
   percentage: 100,

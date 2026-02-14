@@ -86,7 +86,8 @@ function loadLogs() {
       return;
     }
 
-    logs.slice().reverse().forEach(log => {
+    logs.forEach(log => {
+
       const div = document.createElement("div");
       div.className = "card";
 

@@ -55,6 +55,7 @@ app.get("/", (req, res) => {
 
 
 const SECRET_KEY = process.env.SECRET_KEY;
+const DEVICE_SECRET = process.env.DEVICE_SECRET;
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
@@ -484,7 +485,12 @@ app.post("/api/patients/:id/new-bag", authenticateToken, async (req, res) => {
 });
 
 // ================= SENSOR UPDATE =================
-app.post("/api/sensor", authenticateToken, async (req, res) => {
+app.post("/api/sensor", async (req, res) => {
+
+   if (req.headers["x-device-key"] !== DEVICE_SECRET) {
+    return res.status(403).json({ message: "Unauthorized device" });
+  }
+
   try {
     const { patientId, weight } = req.body;
 
@@ -503,15 +509,20 @@ app.post("/api/sensor", authenticateToken, async (req, res) => {
       (patient.remainingML / patient.totalML) * 100
     );
 
-    patient.status = patient.percentage <= 0 ? "Finished" : "Running";
+    if (patient.percentage <= 0) {
+  patient.status = "Finished";
+} else if (patient.percentage <= 10) {
+  patient.status = "Critical";
+} else if (patient.percentage <= 30) {
+  patient.status = "Low";
+} else {
+  patient.status = "Running";
+}
+
 
     await patient.save();
 
-    await addLog("SENSOR_UPDATE", {
-      performedBy: req.user.username,
-      target: patientId,
-      ip: req.ip
-    });
+ 
 
     res.json({ success: true });
 

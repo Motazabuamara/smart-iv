@@ -89,7 +89,7 @@ button {
   margin: 0;
   height: 100vh;
   font-family: 'Segoe UI', sans-serif;
-  background: url("login-bg.jpg") no-repeat center center/cover;
+background: url("login-bg.webp") no-repeat center center/cover;
   display: flex;
   align-items: center;
   position: relative;

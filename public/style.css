@@ -89,8 +89,8 @@ button {
   display: flex;
   justify-content: center;
   align-items: center;
-  position: relative;
 }
+
 
 /* طبقة زرقاء خفيفة حتى ندمج الصورة */
 .login-body::before {

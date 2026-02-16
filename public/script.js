@@ -286,13 +286,13 @@ if (nurseElement) {
 }
 
   await loadPatients();
-
+/*
   if (!autoRefreshStarted) {
     setInterval(() => {
   loadPatients(true);
 }, 30000);
     autoRefreshStarted = true;
-  }
+  }    */
 
 });
 

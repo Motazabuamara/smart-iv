@@ -495,9 +495,9 @@ app.post("/api/sensor", async (req, res) => {
     const { patientId, weight } = req.body;
 
     const patient = await Patient.findOne({
-      patientId: patientId,
-      nurse: req.user.username
-    });
+  patientId: patientId
+});
+
 
     if (!patient) {
       return res.status(404).json({ success: false, message: "Patient not found" });

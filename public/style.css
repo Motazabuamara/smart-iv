@@ -93,15 +93,15 @@ button {
 
 
 /* طبقة زرقاء خفيفة حتى ندمج الصورة */
-.login-body::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    rgba(20, 60, 120, 0.85),
-    rgba(10, 40, 90, 0.85)
-  );
-  backdrop-filter: blur(4px);
+.login-body {
+  margin: 0;
+  height: 100vh;
+  font-family: 'Segoe UI', sans-serif;
+  background: url("login-bg.jpg") no-repeat center center/cover;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
 }
 
 /* الحاوية */

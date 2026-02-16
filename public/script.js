@@ -1,6 +1,7 @@
 let nurse = null;
 let patientsData = [];
 let selectedId = null;
+let refreshTimeout;
 
 // ================= LOGIN =================
 async function login() {
@@ -325,7 +326,20 @@ document.addEventListener("DOMContentLoaded", () => {
 const select = document.getElementById("patients");
 if (select) {
   select.addEventListener("change", selectPatient);
-  
+  document.querySelectorAll("input").forEach(input => {
+  input.addEventListener("input", () => {
+
+    if (refreshTimeout) {
+      clearTimeout(refreshTimeout);
+    }
+
+    refreshTimeout = setTimeout(() => {
+      loadPatients(true);
+    }, 30000); // يحدث بعد 30 ثانية من آخر كتابة
+
+  });
+});
+
 }
 });
 

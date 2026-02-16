@@ -36,11 +36,13 @@
 
 </div>
 
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+
 <script src="script.js"></script>
 
 <script>
-const socket = io("https://smart-iv.onrender.com");
+const socket = io();
+
 
 socket.on("patientUpdated", (data) => {
   console.log("Real-time update:", data);

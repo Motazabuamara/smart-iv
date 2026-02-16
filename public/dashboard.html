@@ -43,19 +43,56 @@
 <script>
 const socket = io();
 
-
 socket.on("patientUpdated", (data) => {
-  console.log("Real-time update:", data);
-
   const selectedId = document.getElementById("patients").value;
 
   if (selectedId === data.patientId) {
+
     document.getElementById("displayRemaining").innerText = data.remainingML;
     document.getElementById("displayPercentage").innerText = data.percentage;
     document.getElementById("displayStatus").innerText = data.status;
+
+    const statusElement = document.getElementById("displayStatus");
+    const alertBox = document.getElementById("alertBox");
+
+    // إزالة الألوان القديمة
+    statusElement.className = "";
+    alertBox.style.display = "none";
+
+    if (data.status === "Running") {
+      statusElement.style.color = "green";
+    }
+
+    else if (data.status === "Low") {
+      statusElement.style.color = "orange";
+
+      alertBox.style.display = "block";
+      alertBox.style.backgroundColor = "#fff3cd";
+      alertBox.style.color = "#856404";
+      alertBox.innerText = "⚠ IV Level Low";
+    }
+
+    else if (data.status === "Critical") {
+      statusElement.style.color = "red";
+
+      alertBox.style.display = "block";
+      alertBox.style.backgroundColor = "#f8d7da";
+      alertBox.style.color = "#721c24";
+      alertBox.innerText = "🚨 CRITICAL: IV Almost Empty!";
+    }
+
+    else if (data.status === "Finished") {
+      statusElement.style.color = "gray";
+
+      alertBox.style.display = "block";
+      alertBox.style.backgroundColor = "#e2e3e5";
+      alertBox.style.color = "#383d41";
+      alertBox.innerText = "IV Finished";
+    }
   }
 });
 </script>
+
 
 </body>
 </html>

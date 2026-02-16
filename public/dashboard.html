@@ -10,8 +10,8 @@
 
 <div class="card">
 
-  <audio id="alarmSound">
-  <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg">
+ <audio id="alarmSound" preload="auto">
+  <source src="alarm.mp3" type="audio/mpeg">
 </audio>
 
   <h2>Patient Management</h2>
@@ -121,7 +121,10 @@ else if (data.status === "Critical") {
   const alarm = document.getElementById("alarmSound");
 
 if (!alarmActive) {
-  alarm.play();
+  alarm.play().catch(err => {
+    console.log("Audio blocked:", err);
+  });
+
   alarmActive = true;
 }
 

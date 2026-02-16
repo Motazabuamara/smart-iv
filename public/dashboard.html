@@ -54,7 +54,9 @@
 
 <script>
 const socket = io();
-let alarmActive = false;
+
+let lastAlertLevel = null;
+
 function unlockAudio() {
   const alarm = document.getElementById("alarmSound");
 
@@ -84,6 +86,19 @@ socket.on("patientUpdated", (data) => {
     document.getElementById("displayRemaining").innerText = data.remainingML;
     document.getElementById("displayPercentage").innerText = data.percentage;
     document.getElementById("displayStatus").innerText = data.status;
+const percentage = data.percentage;
+const alarm = document.getElementById("alarmSound");
+
+// نقاط التنبيه
+const alertLevels = [20, 15, 10, 5, 0];
+
+for (let level of alertLevels) {
+  if (percentage <= level && lastAlertLevel !== level) {
+    alarm.play().catch(() => {});
+    lastAlertLevel = level;
+    break;
+  }
+}
 
     const statusElement = document.getElementById("displayStatus");
     const alertBox = document.getElementById("alertBox");
@@ -93,7 +108,8 @@ socket.on("patientUpdated", (data) => {
 alertBox.style.display = "none";
 
 if (data.status === "Running") {
-alarmActive = false;
+
+lastAlertLevel = null;
 
   statusElement.style.color = "green";
 
@@ -118,15 +134,7 @@ else if (data.status === "Low") {
 
 else if (data.status === "Critical") {
 
-  const alarm = document.getElementById("alarmSound");
-
-if (!alarmActive) {
-  alarm.play().catch(err => {
-    console.log("Audio blocked:", err);
-  });
-
-  alarmActive = true;
-}
+  
 
   statusElement.style.color = "red";
 

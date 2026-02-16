@@ -6,8 +6,14 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="center">
+  
 
 <div class="card">
+
+  <audio id="alarmSound">
+  <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg">
+</audio>
+
   <h2>Patient Management</h2>
   <p>Nurse: <strong id="nurseName"></strong></p>
 
@@ -48,6 +54,24 @@
 
 <script>
 const socket = io();
+let alarmActive = false;
+function unlockAudio() {
+  const alarm = document.getElementById("alarmSound");
+
+  alarm.play().then(() => {
+    alarm.pause();
+    alarm.currentTime = 0;
+  }).catch(() => {});
+
+  document.removeEventListener("click", unlockAudio);
+  document.removeEventListener("keydown", unlockAudio);
+  document.removeEventListener("touchstart", unlockAudio);
+}
+
+document.addEventListener("click", unlockAudio);
+document.addEventListener("keydown", unlockAudio);
+document.addEventListener("touchstart", unlockAudio);
+
 
 socket.on("patientUpdated", (data) => {
 
@@ -69,6 +93,7 @@ socket.on("patientUpdated", (data) => {
 alertBox.style.display = "none";
 
 if (data.status === "Running") {
+alarmActive = false;
 
   statusElement.style.color = "green";
 
@@ -92,6 +117,13 @@ else if (data.status === "Low") {
 }
 
 else if (data.status === "Critical") {
+
+  const alarm = document.getElementById("alarmSound");
+
+if (!alarmActive) {
+  alarm.play();
+  alarmActive = true;
+}
 
   statusElement.style.color = "red";
 

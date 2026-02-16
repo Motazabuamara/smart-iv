@@ -81,15 +81,7 @@ button {
   font-weight: bold;
   transition: 0.2s ease;
 }
-.login-body {
-  margin: 0;
-  height: 100vh;
-  font-family: 'Segoe UI', sans-serif;
-  background: url("login-bg.jpg") no-repeat center center/cover;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+
 
 
 /* طبقة زرقاء خفيفة حتى ندمج الصورة */
@@ -99,18 +91,25 @@ button {
   font-family: 'Segoe UI', sans-serif;
   background: url("login-bg.jpg") no-repeat center center/cover;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;   /* بدل center */
   align-items: center;
+  padding-left: 5%;             /* تزحها شوي لليسار */
   position: relative;
 }
+
 
 /* الحاوية */
 .login-wrapper {
   position: relative;
   z-index: 2;
-  text-align: center;
+  text-align: left;   /* بدل center */
   color: white;
+
+  width: 100%;
+  max-width: 1200px;
+  padding-left: 5%;   /* هون الحركة لليسار */
 }
+
 
 /* عنوان SMART IV */
 .brand-title {
@@ -118,11 +117,13 @@ button {
   font-weight: 700;
   letter-spacing: 4px;
   margin-bottom: 10px;
+  text-align: left;
 }
 
 .brand-sub {
   opacity: 0.9;
   margin-bottom: 40px;
+  text-align: left;
 }
 
 /* الكرت */

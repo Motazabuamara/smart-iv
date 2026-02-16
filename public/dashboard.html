@@ -55,7 +55,7 @@
 <script>
 const socket = io();
 
-let lastAlertLevel = null;
+let lastAlertLevel = 100;
 
 function unlockAudio() {
   const alarm = document.getElementById("alarmSound");
@@ -89,16 +89,19 @@ socket.on("patientUpdated", (data) => {
 const percentage = data.percentage;
 const alarm = document.getElementById("alarmSound");
 
-// نقاط التنبيه
 const alertLevels = [20, 15, 10, 5, 0];
 
 for (let level of alertLevels) {
-  if (percentage <= level && lastAlertLevel !== level) {
+  if (percentage <= level && lastAlertLevel > level) {
     alarm.play().catch(() => {});
     lastAlertLevel = level;
     break;
   }
 }
+
+
+lastPercentage = percentage;
+
 
     const statusElement = document.getElementById("displayStatus");
     const alertBox = document.getElementById("alertBox");
@@ -109,7 +112,7 @@ alertBox.style.display = "none";
 
 if (data.status === "Running") {
 
-lastAlertLevel = null;
+lastAlertLevel = 100;
 
   statusElement.style.color = "green";
 

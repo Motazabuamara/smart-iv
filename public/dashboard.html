@@ -36,6 +36,24 @@
 
 </div>
 
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="script.js"></script>
+
+<script>
+const socket = io("https://smart-iv.onrender.com");
+
+socket.on("patientUpdated", (data) => {
+  console.log("Real-time update:", data);
+
+  const selectedId = document.getElementById("patients").value;
+
+  if (selectedId === data.patientId) {
+    document.getElementById("displayRemaining").innerText = data.remainingML;
+    document.getElementById("displayPercentage").innerText = data.percentage;
+    document.getElementById("displayStatus").innerText = data.status;
+  }
+});
+</script>
+
 </body>
 </html>

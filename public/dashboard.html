@@ -17,8 +17,14 @@
   <input id="bed" placeholder="Bed Number">
   <input id="fluid" placeholder="IV Fluid">
   <input id="totalML" placeholder="Total ML">
-  <hr>
-  <div id="alertBox" class="alertBox" style="display:none;"></div>
+ <hr>
+
+<div id="statusBanner" class="statusBanner">
+  IV Running Normally
+</div>
+
+<div id="alertBox" class="alertBox" style="display:none;"></div>
+
 
 <p><strong>IV Fluid:</strong> <span id="displayFluid"></span></p>
 <p><strong>Remaining:</strong> <span id="displayRemaining">-</span> ml</p>
@@ -44,6 +50,9 @@
 const socket = io();
 
 socket.on("patientUpdated", (data) => {
+
+
+
   const selectedId = document.getElementById("patients").value;
 
   if (selectedId === data.patientId) {
@@ -54,41 +63,62 @@ socket.on("patientUpdated", (data) => {
 
     const statusElement = document.getElementById("displayStatus");
     const alertBox = document.getElementById("alertBox");
+    const banner = document.getElementById("statusBanner");
 
-    // إزالة الألوان القديمة
-    statusElement.className = "";
-    alertBox.style.display = "none";
+// إزالة alert القديم
+alertBox.style.display = "none";
 
-    if (data.status === "Running") {
-      statusElement.style.color = "green";
-    }
+if (data.status === "Running") {
 
-    else if (data.status === "Low") {
-      statusElement.style.color = "orange";
+  statusElement.style.color = "green";
 
-      alertBox.style.display = "block";
-      alertBox.style.backgroundColor = "#fff3cd";
-      alertBox.style.color = "#856404";
-      alertBox.innerText = "⚠ IV Level Low";
-    }
+  banner.innerText = "IV Running Normally";
+  banner.style.backgroundColor = "#d4edda";
+  banner.style.color = "#155724";
+}
 
-    else if (data.status === "Critical") {
-      statusElement.style.color = "red";
+else if (data.status === "Low") {
 
-      alertBox.style.display = "block";
-      alertBox.style.backgroundColor = "#f8d7da";
-      alertBox.style.color = "#721c24";
-      alertBox.innerText = "🚨 CRITICAL: IV Almost Empty!";
-    }
+  statusElement.style.color = "orange";
 
-    else if (data.status === "Finished") {
-      statusElement.style.color = "gray";
+  banner.innerText = "IV Level Low";
+  banner.style.backgroundColor = "#fff3cd";
+  banner.style.color = "#856404";
 
-      alertBox.style.display = "block";
-      alertBox.style.backgroundColor = "#e2e3e5";
-      alertBox.style.color = "#383d41";
-      alertBox.innerText = "IV Finished";
-    }
+  alertBox.style.display = "block";
+  alertBox.style.backgroundColor = "#fff3cd";
+  alertBox.style.color = "#856404";
+  alertBox.innerText = "⚠ IV Level Low";
+}
+
+else if (data.status === "Critical") {
+
+  statusElement.style.color = "red";
+
+  banner.innerText = "CRITICAL - IV Almost Empty!";
+  banner.style.backgroundColor = "#f8d7da";
+  banner.style.color = "#721c24";
+
+  alertBox.style.display = "block";
+  alertBox.style.backgroundColor = "#f8d7da";
+  alertBox.style.color = "#721c24";
+  alertBox.innerText = "🚨 CRITICAL: IV Almost Empty!";
+}
+
+else if (data.status === "Finished") {
+
+  statusElement.style.color = "gray";
+
+  banner.innerText = "IV Finished";
+  banner.style.backgroundColor = "#e2e3e5";
+  banner.style.color = "#383d41";
+
+  alertBox.style.display = "block";
+  alertBox.style.backgroundColor = "#e2e3e5";
+  alertBox.style.color = "#383d41";
+  alertBox.innerText = "IV Finished";
+}
+
   }
 });
 </script>

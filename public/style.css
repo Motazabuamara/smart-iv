@@ -172,3 +172,137 @@ background: url("login-bg.webp") no-repeat center center/cover;
   transform: translateY(-3px);
   box-shadow: 0 10px 25px rgba(0,0,0,0.3);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  /*/*/
+  body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(to right, #dbeafe, #93c5fd);
+}
+
+.dashboard {
+  display: flex;
+  gap: 30px;
+  padding: 40px;
+}
+
+.left-panel, .right-panel {
+  background: white;
+  padding: 25px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.left-panel { width: 30%; }
+.right-panel { width: 70%; }
+
+input, select {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+
+.btn {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.green { background: #10b981; color: white; }
+.blue { background: #3b82f6; color: white; }
+.orange { background: #f59e0b; color: white; }
+.red { background: #ef4444; color: white; }
+.gray { background: #6b7280; color: white; }
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.info-card {
+  background: #f9fafb;
+  padding: 15px;
+  border-radius: 15px;
+  text-align: center;
+}
+
+.progress-container {
+  background: #e5e7eb;
+  height: 25px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(to right, #10b981, #059669);
+  transition: 0.5s;
+}
+
+.statusBanner {
+  padding: 15px;
+  border-radius: 12px;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.running { background: #d4edda; color: #155724; }
+.low { background: #fff3cd; color: #856404; }
+.critical { background: #f8d7da; color: #721c24; }
+.finished { background: #e2e3e5; color: #383d41; }
+
+.alertBox {
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* {
+  box-sizing: border-box;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+  transition: 0.2s;
+}

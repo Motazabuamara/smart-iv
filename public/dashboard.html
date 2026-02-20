@@ -2,173 +2,165 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard</title>
+  <title>Smart IV Dashboard</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="center">
-  
+<body>
 
-<div class="card">
-
- <audio id="alarmSound" preload="auto">
+<audio id="alarmSound" preload="auto">
   <source src="alarm.mp3" type="audio/mpeg">
 </audio>
 
-  <h2>Patient Management</h2>
-  <p>Nurse: <strong id="nurseName"></strong></p>
+<div class="dashboard">
 
-<select id="patients"></select>
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
 
-  <input id="name" placeholder="Patient Name">
-  <input id="bed" placeholder="Bed Number">
-  <input id="fluid" placeholder="IV Fluid">
-  <input id="totalML" placeholder="Total ML">
- <hr>
+    <h2>Patient Management</h2>
+    <p>Nurse: <strong id="nurseName"></strong></p>
 
-<div id="statusBanner" class="statusBanner">
-  IV Running Normally
-</div>
+    <select id="patients"></select>
 
-<div id="alertBox" class="alertBox" style="display:none;"></div>
+    <input id="name" placeholder="Patient Name">
+    <input id="bed" placeholder="Bed Number">
+    <input id="fluid" placeholder="IV Fluid">
+    <input id="totalML" placeholder="Total ML">
 
+    <button id="addBtn" class="btn green">Add</button>
+    <button id="newBagBtn" class="btn blue">New Bag</button>
+    <button id="updateBtn" class="btn orange">Update</button>
+    <button id="deleteBtn" class="btn red">Delete</button>
+    <button id="logoutBtn" class="btn gray">Logout</button>
 
-<p><strong>IV Fluid:</strong> <span id="displayFluid"></span></p>
-<p><strong>Remaining:</strong> <span id="displayRemaining">-</span> ml</p>
-<p><strong>Percentage:</strong> <span id="displayPercentage">-</span> %</p>
-<p><strong>Status:</strong> <span id="displayStatus">-</span></p>
+  </div>
 
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
 
-<button id="addBtn">Add</button>
-<button id="newBagBtn">New Bag</button>
-<button id="updateBtn">Update</button>
-<button id="deleteBtn">Delete</button>
-<button id="logoutBtn">Logout</button>
+    <h2>IV Live Monitoring</h2>
 
+    <div id="statusBanner" class="statusBanner">
+      IV Running Normally
+    </div>
 
+    <div id="alertBox" class="alertBox" style="display:none;"></div>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <h4>IV Fluid</h4>
+        <p id="displayFluid">-</p>
+      </div>
+
+      <div class="info-card">
+        <h4>Remaining</h4>
+        <p><span id="displayRemaining">-</span> ml</p>
+      </div>
+
+      <div class="info-card">
+        <h4>Percentage</h4>
+        <p><span id="displayPercentage">-</span> %</p>
+      </div>
+
+      <div class="info-card">
+        <h4>Status</h4>
+        <p id="displayStatus">-</p>
+      </div>
+    </div>
+
+    <div class="progress-container">
+      <div id="progressBar" class="progress-bar"></div>
+    </div>
+
+  </div>
 
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-
 <script src="script.js"></script>
 
 <script>
 const socket = io();
-
 let lastAlertLevel = 100;
 
 function unlockAudio() {
   const alarm = document.getElementById("alarmSound");
-
   alarm.play().then(() => {
     alarm.pause();
     alarm.currentTime = 0;
   }).catch(() => {});
-
   document.removeEventListener("click", unlockAudio);
   document.removeEventListener("keydown", unlockAudio);
   document.removeEventListener("touchstart", unlockAudio);
 }
-
 document.addEventListener("click", unlockAudio);
 document.addEventListener("keydown", unlockAudio);
 document.addEventListener("touchstart", unlockAudio);
 
-
 socket.on("patientUpdated", (data) => {
 
-
-
   const selectedId = document.getElementById("patients").value;
-
   if (selectedId === data.patientId) {
 
     document.getElementById("displayRemaining").innerText = data.remainingML;
     document.getElementById("displayPercentage").innerText = data.percentage;
     document.getElementById("displayStatus").innerText = data.status;
-const percentage = data.percentage;
-const alarm = document.getElementById("alarmSound");
 
-const alertLevels = [20, 15, 10, 5, 0];
+    document.getElementById("progressBar").style.width = data.percentage + "%";
 
-for (let level of alertLevels) {
-  if (percentage <= level && lastAlertLevel > level) {
-    alarm.play().catch(() => {});
-    lastAlertLevel = level;
-    break;
-  }
-}
+    const percentage = data.percentage;
+    const alarm = document.getElementById("alarmSound");
+    const alertLevels = [20, 15, 10, 5, 0];
 
-
-
-
+    for (let level of alertLevels) {
+      if (percentage <= level && lastAlertLevel > level) {
+        alarm.play().catch(() => {});
+        lastAlertLevel = level;
+        break;
+      }
+    }
 
     const statusElement = document.getElementById("displayStatus");
     const alertBox = document.getElementById("alertBox");
     const banner = document.getElementById("statusBanner");
 
-// إزالة alert القديم
-alertBox.style.display = "none";
+    alertBox.style.display = "none";
 
-if (data.status === "Running") {
+    if (data.status === "Running") {
+      lastAlertLevel = 100;
+      statusElement.style.color = "green";
+      banner.className = "statusBanner running";
+      banner.innerText = "IV Running Normally";
+    }
 
-lastAlertLevel = 100;
+    else if (data.status === "Low") {
+      statusElement.style.color = "orange";
+      banner.className = "statusBanner low";
+      banner.innerText = "IV Level Low";
 
-  statusElement.style.color = "green";
+      alertBox.style.display = "block";
+      alertBox.innerText = "⚠ IV Level Low";
+    }
 
-  banner.innerText = "IV Running Normally";
-  banner.style.backgroundColor = "#d4edda";
-  banner.style.color = "#155724";
-}
+    else if (data.status === "Critical") {
+      statusElement.style.color = "red";
+      banner.className = "statusBanner critical";
+      banner.innerText = "CRITICAL - IV Almost Empty!";
 
-else if (data.status === "Low") {
+      alertBox.style.display = "block";
+      alertBox.innerText = "🚨 CRITICAL: IV Almost Empty!";
+    }
 
-  statusElement.style.color = "orange";
+    else if (data.status === "Finished") {
+      statusElement.style.color = "gray";
+      banner.className = "statusBanner finished";
+      banner.innerText = "IV Finished";
 
-  banner.innerText = "IV Level Low";
-  banner.style.backgroundColor = "#fff3cd";
-  banner.style.color = "#856404";
-
-  alertBox.style.display = "block";
-  alertBox.style.backgroundColor = "#fff3cd";
-  alertBox.style.color = "#856404";
-  alertBox.innerText = "⚠ IV Level Low";
-}
-
-else if (data.status === "Critical") {
-
-  
-
-  statusElement.style.color = "red";
-
-  banner.innerText = "CRITICAL - IV Almost Empty!";
-  banner.style.backgroundColor = "#f8d7da";
-  banner.style.color = "#721c24";
-
-  alertBox.style.display = "block";
-  alertBox.style.backgroundColor = "#f8d7da";
-  alertBox.style.color = "#721c24";
-  alertBox.innerText = "🚨 CRITICAL: IV Almost Empty!";
-}
-
-else if (data.status === "Finished") {
-
-  statusElement.style.color = "gray";
-
-  banner.innerText = "IV Finished";
-  banner.style.backgroundColor = "#e2e3e5";
-  banner.style.color = "#383d41";
-
-  alertBox.style.display = "block";
-  alertBox.style.backgroundColor = "#e2e3e5";
-  alertBox.style.color = "#383d41";
-  alertBox.innerText = "IV Finished";
-}
-
+      alertBox.style.display = "block";
+      alertBox.innerText = "IV Finished";
+    }
   }
 });
 </script>
-
 
 </body>
 </html>

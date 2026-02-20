@@ -41,7 +41,7 @@ const patientSchema = new mongoose.Schema({
   nurse: String
 }, { timestamps: true });
 
-
+patientSchema.index({ room: 1 }, { unique: true });
 const Patient = mongoose.model("Patient", patientSchema);
 
 
@@ -295,9 +295,8 @@ app.post("/api/patients", authenticateToken, async (req, res) => {
     }
 
     const existing = await Patient.findOne({
-      room: bed,
-      nurse: req.user.username
-    });
+  room: bed
+});
 
     if (existing) {
       return res.status(400).json({ message: "Bed already occupied" });
@@ -378,9 +377,8 @@ app.put("/api/patients/:id", authenticateToken, async (req, res) => {
     if (newBed && newBed !== patient.room) {
 
       const existingBed = await Patient.findOne({
-        room: newBed,
-        nurse: req.user.username
-      });
+  room: newBed
+});
 
       if (existingBed) {
         return res.status(400).json({ message: "Bed already occupied" });

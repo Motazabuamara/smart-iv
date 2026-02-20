@@ -181,25 +181,23 @@ app.get("/admin/logs", authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-
-app.delete("/admin/users/:username", authenticateToken, requireAdmin, async (req, res) => {
+app.delete("/admin/users/:id", authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const usernameToDelete = req.params.username;
+    const user = await User.findById(req.params.id);
 
-    // منع حذف نفسه
-    if (usernameToDelete === req.user.username) {
-      return res.status(400).json({ message: "You cannot delete yourself" });
-    }
-
-    const deletedUser = await User.findOneAndDelete({ username: usernameToDelete });
-
-    if (!deletedUser) {
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    if (user.username === req.user.username) {
+      return res.status(400).json({ message: "You cannot delete yourself" });
+    }
+
+    await user.deleteOne();
+
     await addLog("DELETE_USER", {
       performedBy: req.user.username,
-      target: usernameToDelete,
+      target: user.username,
       ip: req.ip
     });
 
@@ -209,8 +207,6 @@ app.delete("/admin/users/:username", authenticateToken, requireAdmin, async (req
     res.status(500).json({ message: "Error deleting user" });
   }
 });
-
-
 
 
 const helmet = require("helmet");

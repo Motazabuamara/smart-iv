@@ -36,7 +36,7 @@ function loadUsers() {
 
       const btn = document.createElement("button");
       btn.innerText = "Delete";
-      btn.addEventListener("click", () => deleteUser(user.username));
+      btn.addEventListener("click", () => deleteUser(user._id));
 
       div.appendChild(name);
       div.appendChild(btn);
@@ -47,8 +47,8 @@ function loadUsers() {
 }
 
 // حذف مستخدم
-function deleteUser(username) {
-  fetch("/admin/users/" + username, {
+function deleteUser(id) {
+  fetch("/admin/users/" + id, {
     method: "DELETE",
     headers: { "Authorization": "Bearer " + token }
   })

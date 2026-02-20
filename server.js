@@ -362,7 +362,6 @@ app.get("/api/patients", authenticateToken, async (req, res) => {
 
 
 
-
 // ================= UPDATE =================
 app.put("/api/patients/:id", authenticateToken, async (req, res) => {
   try {
@@ -377,6 +376,23 @@ app.put("/api/patients/:id", authenticateToken, async (req, res) => {
       return res.status(404).json({ success: false });
     }
 
+    const newBed = req.body.bed?.trim();
+
+    // 🔒 فحص السرير إذا تغير
+    if (newBed && newBed !== patient.room) {
+
+      const existingBed = await Patient.findOne({
+        room: newBed,
+        nurse: req.user.username
+      });
+
+      if (existingBed) {
+        return res.status(400).json({ message: "Bed already occupied" });
+      }
+
+      patient.room = newBed;
+    }
+
     const oldRemaining = patient.remainingML;
 
     if (req.body.totalML) {
@@ -384,7 +400,6 @@ app.put("/api/patients/:id", authenticateToken, async (req, res) => {
     }
 
     patient.name = req.body.name || patient.name;
-    patient.room = req.body.bed || patient.room;
     patient.fluid = req.body.fluid || patient.fluid;
 
     patient.remainingML = oldRemaining;
@@ -411,7 +426,6 @@ app.put("/api/patients/:id", authenticateToken, async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
-
 
 
 

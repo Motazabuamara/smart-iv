@@ -311,7 +311,7 @@ button:hover {
 .dashboard {
   display: flex;
   gap: 40px;
-  padding: 20px 40px;
+  padding: 10px 40px;
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -319,8 +319,8 @@ button:hover {
 
 .top-header {
   width: 95%;
-  margin: 10px auto;
-  padding: 15px 25px;
+  margin: 7px auto;
+  padding: 11px 25px;
   border-radius: 20px;
 
   background: rgba(255,255,255,0.85);
@@ -355,7 +355,7 @@ button:hover {
 
 
 .progress-section {
-  margin-top: 40px;
+  margin-top: 20px;
   padding: 25px;
   border-radius: 20px;
   background: rgba(255,255,255,0.75);

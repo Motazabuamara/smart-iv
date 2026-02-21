@@ -3,7 +3,10 @@
 
 
 
-
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
 
 
 .error {
@@ -304,17 +307,16 @@ button:hover {
 
 
 .dashboard {
-  display: flex;
-  gap: 40px;
-  padding: 50px;
+  padding: 20px 40px;
 }
 
 
 .top-header {
   width: 95%;
-  margin: 25px auto 0 auto;
-  padding: 20px 30px;
+  margin: 10px auto;
+  padding: 15px 25px;
   border-radius: 20px;
+
 
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(10px);

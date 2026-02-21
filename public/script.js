@@ -20,7 +20,7 @@ console.log(data);
   if (data.success) {
     localStorage.setItem("nurse", data.name);
     localStorage.setItem("token", data.token);   // 🔥 جديد
-    window.location.href = "dashboard.html";
+    //window.location.href = "dashboard.html";
   } else {
     document.getElementById("error").innerText = "Invalid login";
 

@@ -266,7 +266,7 @@ const token = jwt.sign(
   res.json({
     success: true,
     token,
-    name: user.name
+    name: user.name,
       role: user.role || "nurse"
   });
 

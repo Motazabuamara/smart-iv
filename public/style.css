@@ -192,23 +192,41 @@ background: url("login-bg.webp") no-repeat center center/cover;
 
 
   /*/*/
-  body {
+ body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(to right, #dbeafe, #93c5fd);
+  background: url("background.jpg") no-repeat center center fixed;
+  background-size: cover;
 }
-
 .dashboard {
   display: flex;
   gap: 30px;
   padding: 40px;
 }
 
-.left-panel, .right-panel {
-  background: white;
+.right-panel {
+  width: 70%;
   padding: 25px;
   border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  position: relative;
+
+  background: linear-gradient(
+    to right,
+rgba(255,255,255,0.95) 0%,
+  rgba(255,255,255,0.90) 10%,
+  rgba(255,255,255,0.85) 20%,
+  rgba(255,255,255,0.80) 30%,
+  rgba(255,255,255,0.70) 40%,
+  rgba(255,255,255,0.60) 50%,
+  rgba(255,255,255,0.50) 60%,
+  rgba(255,255,255,0.40) 70%,
+  rgba(255,255,255,0.30) 80%,
+  rgba(255,255,255,0.20) 90%,
+  rgba(255,255,255,0.05) 100%
+  );
+
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
 
 .left-panel { width: 30%; }

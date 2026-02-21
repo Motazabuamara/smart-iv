@@ -21,10 +21,7 @@ if (data.success) {
   localStorage.setItem("nurse", data.name);
   localStorage.setItem("token", data.token);
   localStorage.setItem("role", data.role);
-  
-  if (data.role === "admin") {
-    window.open("admin.html", "_blank");  // يفتح نافذة ثانية
-  }
+   
 
   window.location.href = "dashboard.html"; // النافذة الأساسية تروح داشبورد
 

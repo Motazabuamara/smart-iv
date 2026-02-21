@@ -3,7 +3,7 @@ console.log("ADMIN JS LOADED 🔥");
 const token = localStorage.getItem("token");
 
 if (!token) {
-  window.location.href = "index.html";
+  window.location.href = "login.html";
 }
 
 // تحقق إنه admin
@@ -111,7 +111,7 @@ function loadLogs() {
 document.getElementById("logoutBtn")
   .addEventListener("click", () => {
     localStorage.clear();
-    window.location.href = "index.html";
+    window.location.href = "login.html";
   });
 
 loadUsers();

@@ -256,6 +256,7 @@ const token = jwt.sign(
     username: user.username,
     name: user.name,
     role: user.role || "nurse"
+    
   },
   SECRET_KEY,
   { expiresIn: "2h" }
@@ -266,6 +267,7 @@ const token = jwt.sign(
     success: true,
     token,
     name: user.name
+      role: user.role || "nurse"
   });
 
 });

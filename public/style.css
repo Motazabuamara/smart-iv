@@ -173,31 +173,33 @@ body {
 }
 
 
+.left-panel {
+  flex: 0 0 360px;
+  padding: 25px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
 .right-panel {
-  width: 72%;
+  flex: 1;
   padding: 25px;
   border-radius: 20px;
   position: relative;
 
   background: linear-gradient(
     to right,
-rgba(255,255,255,0.95) 0%,
-  rgba(255,255,255,0.90) 10%,
-  rgba(255,255,255,0.85) 20%,
-  rgba(255,255,255,0.80) 30%,
-  rgba(255,255,255,0.70) 40%,
-  rgba(255,255,255,0.60) 50%,
-  rgba(255,255,255,0.50) 60%,
-  rgba(255,255,255,0.40) 70%,
-  rgba(255,255,255,0.30) 80%,
-  rgba(255,255,255,0.20) 90%,
-  rgba(255,255,255,0.00) 100%
+    rgba(255,255,255,0.95) 0%,
+    rgba(255,255,255,0.90) 20%,
+    rgba(255,255,255,0.70) 50%,
+    rgba(255,255,255,0.30) 80%,
+    rgba(255,255,255,0.00) 100%
   );
 
   backdrop-filter: blur(6px);
   box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
-
 .left-panel {
   width: 30%;
   padding: 25px;
@@ -307,7 +309,11 @@ button:hover {
 
 
 .dashboard {
+  display: flex;
+  gap: 40px;
   padding: 20px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 
@@ -316,7 +322,6 @@ button:hover {
   margin: 10px auto;
   padding: 15px 25px;
   border-radius: 20px;
-
 
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(10px);
@@ -327,7 +332,6 @@ button:hover {
 
   box-shadow: 0 8px 25px rgba(0,0,0,0.1);
 }
-
 .logo {
   font-size: 24px;
   font-weight: bold;
@@ -359,21 +363,7 @@ button:hover {
   box-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
 
-.top-header {
-  width: 95%;
-  margin: 25px auto 0 auto;
-  padding: 20px 30px;
-  border-radius: 20px;
 
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(10px);
-
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-}
 
 .logo {
   font-size: 24px;

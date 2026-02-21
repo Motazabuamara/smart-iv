@@ -1,40 +1,10 @@
-.center {
 
-  font-family: Arial;
-  background: linear-gradient(135deg, #1e3c72, #2a5298);
-  margin: 0;
-}
 
-.center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
 
-.card {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 350px;
-  text-align: center;
-}
 
-input, select {
-  width: 100%;
-  margin: 8px 0;
-  padding: 8px;
-}
 
-button {
-  margin: 5px;
-  padding: 8px 12px;
-}
 
-.logout {
-  background: #c0392b;
-  color: white;
-}
+
 
 .error {
   color: red;
@@ -66,20 +36,16 @@ button {
 #logoutBtn {
   background-color: #dc3545;
   color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
   border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s ease;
 }
 
 #logoutBtn:hover {
   background-color: #b02a37;
-}
-#logoutBtn {
-  background-color: #dc3545;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: 0.2s ease;
 }
 
 
@@ -192,17 +158,17 @@ background: url("login-bg.webp") no-repeat center center/cover;
 
 
   /*/*/
- body {
+body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
-  background: url("background.jpg") no-repeat center center fixed;
+
+  background-image: url("background.jpg");
+  background-repeat: no-repeat;
   background-size: cover;
+  background-position: 85% center;
+  background-attachment: fixed;
 }
-.dashboard {
-  display: flex;
-  gap: 30px;
-  padding: 40px;
-}
+
 
 .right-panel {
   width: 70%;
@@ -222,15 +188,24 @@ rgba(255,255,255,0.95) 0%,
   rgba(255,255,255,0.40) 70%,
   rgba(255,255,255,0.30) 80%,
   rgba(255,255,255,0.20) 90%,
-  rgba(255,255,255,0.05) 100%
+  rgba(255,255,255,0.00) 100%
   );
 
   backdrop-filter: blur(6px);
   box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
 
-.left-panel { width: 30%; }
-.right-panel { width: 70%; }
+.left-panel {
+  width: 30%;
+  padding: 25px;
+  border-radius: 20px;
+
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(6px);
+
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
 
 input, select {
   width: 100%;
@@ -264,14 +239,16 @@ input, select {
 }
 
 .info-card {
-  background: #f9fafb;
-  padding: 15px;
-  border-radius: 15px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(4px);
+  padding: 18px;
+  border-radius: 16px;
   text-align: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
 }
 
 .progress-container {
-  background: #e5e7eb;
+  background: rgba(0,0,0,0.08);
   height: 25px;
   border-radius: 20px;
   overflow: hidden;
@@ -323,4 +300,11 @@ button:hover {
   transform: translateY(-2px);
   opacity: 0.9;
   transition: 0.2s;
+}
+
+
+.dashboard {
+  display: flex;
+  gap: 40px;
+  padding: 50px;
 }

@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
-<div class="dashboard"></div>
 
 <div class="top-header">
   <div class="logo">
@@ -139,7 +138,17 @@ socket.on("patientUpdated", (data) => {
     document.getElementById("displayStatus").innerText = data.status;
 
     document.getElementById("progressBar").style.width = data.percentage + "%";
+const progressBar = document.getElementById("progressBar");
 
+if (data.percentage > 50) {
+  progressBar.style.background = "linear-gradient(to right, #10b981, #059669)";
+}
+else if (data.percentage > 20) {
+  progressBar.style.background = "linear-gradient(to right, #f59e0b, #d97706)";
+}
+else {
+  progressBar.style.background = "linear-gradient(to right, #ef4444, #b91c1c)";
+}
     const percentage = data.percentage;
     const alarm = document.getElementById("alarmSound");
     const alertLevels = [20, 15, 10, 5, 0];
@@ -153,44 +162,35 @@ socket.on("patientUpdated", (data) => {
     }
 
     const statusElement = document.getElementById("displayStatus");
-    const alertBox = document.getElementById("alertBox");
+    
     const banner = document.getElementById("statusBanner");
 
-    alertBox.style.display = "none";
+   
 
-    if (data.status === "Running") {
-      lastAlertLevel = 100;
-      statusElement.style.color = "green";
-      banner.className = "statusBanner running";
-      banner.innerText = "IV Running Normally";
-    }
+   if (data.status === "Running") {
+  lastAlertLevel = 100;
+  statusElement.style.color = "green";
+  banner.className = "statusBanner running";
+  banner.innerText = "IV Running Normally";
+}
 
-    else if (data.status === "Low") {
-      statusElement.style.color = "orange";
-      banner.className = "statusBanner low";
-      banner.innerText = "IV Level Low";
+else if (data.status === "Low") {
+  statusElement.style.color = "orange";
+  banner.className = "statusBanner low";
+  banner.innerText = "IV Level Low";
+}
 
-      alertBox.style.display = "block";
-      alertBox.innerText = "⚠ IV Level Low";
-    }
+else if (data.status === "Critical") {
+  statusElement.style.color = "red";
+  banner.className = "statusBanner critical";
+  banner.innerText = "CRITICAL - IV Almost Empty!";
+}
 
-    else if (data.status === "Critical") {
-      statusElement.style.color = "red";
-      banner.className = "statusBanner critical";
-      banner.innerText = "CRITICAL - IV Almost Empty!";
-
-      alertBox.style.display = "block";
-      alertBox.innerText = "🚨 CRITICAL: IV Almost Empty!";
-    }
-
-    else if (data.status === "Finished") {
-      statusElement.style.color = "gray";
-      banner.className = "statusBanner finished";
-      banner.innerText = "IV Finished";
-
-      alertBox.style.display = "block";
-      alertBox.innerText = "IV Finished";
-    }
+else if (data.status === "Finished") {
+  statusElement.style.color = "gray";
+  banner.className = "statusBanner finished";
+  banner.innerText = "IV Finished";
+}
   }
 });
 </script>

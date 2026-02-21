@@ -4,8 +4,7 @@
 
 
 html, body {
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
 }
 
 
@@ -202,16 +201,6 @@ body {
   );
 
   backdrop-filter: blur(6px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-}
-.left-panel {
-  width: 30%;
-  padding: 25px;
-  border-radius: 20px;
-
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(6px);
-
   box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
 

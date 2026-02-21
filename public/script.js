@@ -122,7 +122,9 @@ function selectPatient() {
     document.getElementById("displayStatus").innerText = "-";
 
     const alertBox = document.getElementById("alertBox");
-    alertBox.style.display = "none";
+if (alertBox) {
+  alertBox.style.display = "none";
+}
 
     return;
   }

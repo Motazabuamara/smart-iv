@@ -174,7 +174,7 @@ body {
 
 
 .left-panel {
-  flex: 0 0 360px;
+  flex: 0 0 320px;
   padding: 25px;
   border-radius: 20px;
   background: rgba(255,255,255,0.95);
@@ -184,8 +184,9 @@ body {
 
 .right-panel {
   flex: 1;
-  padding: 25px;
-  border-radius: 20px;
+  max-width: 780px;   /* تحكم بالحجم */
+  padding: 20px;
+
   position: relative;
 
   background: linear-gradient(
@@ -310,10 +311,9 @@ button:hover {
 
 .dashboard {
   display: flex;
-  gap: 40px;
-  padding: 10px 40px;
-  max-width: 1400px;
-  margin: 0 auto;
+  gap: 20px;              /* كان 40 */
+  padding: 10px 0 10px 60px;  /* سحبنا المحتوى عاليسار */
+  max-width: 1200px;      /* كان أكبر */
 }
 
 

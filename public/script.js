@@ -86,8 +86,7 @@ async function loadPatients(keepSelection = false) {
   document.getElementById("displayPercentage").innerText = "-";
   document.getElementById("displayStatus").innerText = "-";
 
-  const alertBox = document.getElementById("alertBox");
-  alertBox.style.display = "none";
+  
 }
 
 
@@ -121,10 +120,7 @@ function selectPatient() {
     document.getElementById("displayPercentage").innerText = "-";
     document.getElementById("displayStatus").innerText = "-";
 
-    const alertBox = document.getElementById("alertBox");
-if (alertBox) {
-  alertBox.style.display = "none";
-}
+    
 
     return;
   }
@@ -154,24 +150,10 @@ if (alertBox) {
   document.getElementById("displayStatus").innerText =
     p.status ?? "Running";
 
-  const alertBox = document.getElementById("alertBox");
+  
   const percentage = Number(p.percentage ?? 100);
 
-  if (percentage <= 0) {
-    alertBox.style.display = "block";
-    alertBox.className = "alertBox alert-danger";
-    alertBox.innerText = "⚠ IV Finished!";
-  } 
-  else if (percentage <= 20) {
-    alertBox.style.display = "block";
-    alertBox.className = "alertBox alert-warning";
-    alertBox.innerText = "⚠ IV Almost Empty!";
-  } 
-  else {
-    alertBox.style.display = "block";
-    alertBox.className = "alertBox alert-normal";
-    alertBox.innerText = "IV Running Normally";
-  }
+ 
 }
 
 

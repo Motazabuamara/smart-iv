@@ -5,6 +5,21 @@
   <title>Smart IV Dashboard</title>
   <link rel="stylesheet" href="style.css">
 </head>
+<div class="dashboard"></div>
+
+<div class="top-header">
+  <div class="logo">
+    💧 Smart <span>IV</span> Dashboard
+  </div>
+
+  <div class="header-right">
+    <div class="nurse-box">
+      Nurse: <strong id="nurseName"></strong>
+    </div>
+
+    <button id="logoutBtn">Logout</button>
+  </div>
+</div>
 <body>
 
 <audio id="alarmSound" preload="auto">
@@ -17,7 +32,7 @@
   <div class="left-panel">
 
     <h2>Patient Management</h2>
-    <p>Nurse: <strong id="nurseName"></strong></p>
+    
 
     <select id="patients"></select>
 
@@ -67,9 +82,13 @@
       </div>
     </div>
 
-    <div class="progress-container">
-      <div id="progressBar" class="progress-bar"></div>
-    </div>
+   <div class="progress-section">
+  <h3>Progress Bar</h3>
+  <div class="progress-container">
+    <div id="progressBar" class="progress-bar"></div>
+  </div>
+</div>
+    
 
   </div>
 

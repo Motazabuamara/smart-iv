@@ -171,7 +171,7 @@ body {
 
 
 .right-panel {
-  width: 70%;
+  width: 72%;
   padding: 25px;
   border-radius: 20px;
   position: relative;
@@ -307,4 +307,89 @@ button:hover {
   display: flex;
   gap: 40px;
   padding: 50px;
+}
+
+
+.top-header {
+  width: 95%;
+  margin: 25px auto 0 auto;
+  padding: 20px 30px;
+  border-radius: 20px;
+
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(10px);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.logo span {
+  color: #1d9bf0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nurse-box {
+  background: rgba(255,255,255,0.9);
+  padding: 8px 16px;
+  border-radius: 12px;
+}
+
+
+.progress-section {
+  margin-top: 40px;
+  padding: 25px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+.top-header {
+  width: 95%;
+  margin: 25px auto 0 auto;
+  padding: 20px 30px;
+  border-radius: 20px;
+
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(10px);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.logo span {
+  color: #1d9bf0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nurse-box {
+  background: rgba(255,255,255,0.9);
+  padding: 8px 16px;
+  border-radius: 12px;
 }

@@ -176,6 +176,7 @@ body {
 .left-panel {
   flex: 0 0 368px;
   padding: 25px;
+  max-height: 560px; 
   border-radius: 20px;
   background: rgba(255,255,255,0.95);
   backdrop-filter: blur(6px);
@@ -184,7 +185,8 @@ body {
 
 .right-panel {
   flex: 1;
-  max-width: 780px;   /* تحكم بالحجم */
+  max-width: 780px; 
+  max-height: 560px;  /* تحكم بالحجم */
   padding: 20px;
   border-radius: 20px;
 

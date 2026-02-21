@@ -174,7 +174,7 @@ body {
 
 
 .left-panel {
-  flex: 0 0 320px;
+  flex: 0 0 368px;
   padding: 25px;
   border-radius: 20px;
   background: rgba(255,255,255,0.95);
@@ -186,6 +186,7 @@ body {
   flex: 1;
   max-width: 780px;   /* تحكم بالحجم */
   padding: 20px;
+  border-radius: 20px;
 
   position: relative;
 

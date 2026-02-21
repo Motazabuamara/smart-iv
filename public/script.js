@@ -15,16 +15,23 @@ async function login() {
     body: JSON.stringify({ username, password })
   });
 
-  const data = await res.json();
-console.log(data);
-  if (data.success) {
-    localStorage.setItem("nurse", data.name);
-    localStorage.setItem("token", data.token);   // 🔥 جديد
-    //window.location.href = "dashboard.html";
-  } else {
-    document.getElementById("error").innerText = "Invalid login";
+ const data = await res.json();
 
-  }
+if (data.success) {
+  localStorage.setItem("nurse", data.name);
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("role", data.role);
+
+  // يروح على الداشبورد
+  window.location.href = "dashboard.html";
+
+  // إذا Admin افتح صفحة الأدمن تلقائي
+ 
+  
+
+} else {
+  document.getElementById("error").innerText = "Invalid login";
+}
 }
 
 

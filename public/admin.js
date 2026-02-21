@@ -5,6 +5,9 @@ const token = localStorage.getItem("token");
 if (!token) {
   window.location.href = "login.html";
 }
+if (localStorage.getItem("role") !== "admin") {
+  window.location.href = "dashboard.html";
+}
 
 // تحقق إنه admin
 fetch("/admin-data", {

@@ -23,6 +23,8 @@
     <button id="logoutBtn">Logout</button>
   </div>
 </div>
+
+
 <body>
 
 <audio id="alarmSound" preload="auto">
@@ -193,6 +195,11 @@ else if (data.status === "Finished") {
 }
   }
 });
+</script>
+<script>
+if (localStorage.getItem("role") === "admin") {
+  window.open("admin.html", "_blank");
+}
 </script>
 
 </body>

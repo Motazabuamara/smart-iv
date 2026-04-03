@@ -139,12 +139,7 @@ app.post("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
       return res.status(400).json({ message: "All fields required" });
     }
 
-    if (!isStrongPassword(password)) {
-      return res.status(400).json({
-        message: "Password must contain uppercase, lowercase, number, symbol and be at least 8 characters"
-      });
-    }
-
+    // تحقق إذا المستخدم موجود
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(400).json({ message: "Username already exists" });
@@ -171,6 +166,7 @@ app.post("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
     res.status(500).json({ message: "Error creating user" });
   }
 });
+
 
 
 

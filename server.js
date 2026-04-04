@@ -21,7 +21,10 @@ const userSchema = new mongoose.Schema({
   password: String,
   name: String,
   role: { type: String, default: "nurse" },
-  phone: { type: String, unique: true }
+  phone: { type: String, unique: true },
+   otp: String,          // 🔥 أضف هذا
+  otpExpires: Date      // 🔥 وأضف هذا
+
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);

@@ -20,7 +20,8 @@ const userSchema = new mongoose.Schema({
   username: { type: String, unique: true },
   password: String,
   name: String,
-  role: { type: String, default: "nurse" }
+  role: { type: String, default: "nurse" },
+  phone: { type: String, unique: true }
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);

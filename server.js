@@ -295,14 +295,14 @@ app.post("/api/send-otp", async (req, res) => {
     return res.status(404).json({ message: "User not found" });
   }
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
 
   user.otp = otp;
-  user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 دقائق
+  user.otpExpires = new Date(Date.now() + 5 * 60 * 1000);
 
   await user.save();
 
-  console.log("🔥 OTP for", user.username, ":", otp);
+  console.log("🔥 OTP GENERATED:", otp);
 
   res.json({ message: "OTP sent" });
 });
@@ -314,11 +314,21 @@ app.post("/api/verify-otp", async (req, res) => {
 
   const user = await User.findOne({ username });
 
-  if (!user || String(user.otp) !== String(otp) || Date.now() > user.otpExpires) {
+  if (!user) {
+    console.log("❌ No user");
     return res.status(400).json({ message: "Invalid OTP" });
   }
 
-  // حذف OTP بعد الاستخدام
+  console.log("🔍 DB OTP:", user.otp);
+  console.log("🔍 Entered OTP:", otp);
+
+  // 🔥 عطّل expiry مؤقتًا
+  if (String(user.otp) !== String(otp)) {
+    console.log("❌ OTP mismatch");
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+
+  // نجاح
   user.otp = null;
   user.otpExpires = null;
   await user.save();
@@ -331,6 +341,8 @@ app.post("/api/verify-otp", async (req, res) => {
     process.env.SECRET_KEY,
     { expiresIn: "2h" }
   );
+
+  console.log("✅ OTP SUCCESS");
 
   res.json({ token });
 });

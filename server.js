@@ -314,7 +314,7 @@ app.post("/api/verify-otp", async (req, res) => {
 
   const user = await User.findOne({ username });
 
-  if (!user || user.otp !== otp || Date.now() > user.otpExpires) {
+  if (!user || String(user.otp) !== String(otp) || Date.now() > user.otpExpires) {
     return res.status(400).json({ message: "Invalid OTP" });
   }
 

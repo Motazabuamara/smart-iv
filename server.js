@@ -1,6 +1,11 @@
 require("dotenv").config();
 const express = require("express");
+const twilio = require("twilio");
 
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
@@ -305,11 +310,22 @@ app.post("/api/send-otp", async (req, res) => {
 
   await user.save();
 
-  console.log("🔥 OTP GENERATED:", otp);
+  try {
+    await client.messages.create({
+      from: "whatsapp:+14155238886", // sandbox Twilio
+      to: `whatsapp:${user.phone}`,  // 🔥 رقم المستخدم من الداتا
+      body: `Your Smart IV OTP code is: ${otp}`
+    });
 
-  res.json({ message: "OTP sent" });
+    console.log("✅ OTP SENT:", otp);
+
+    res.json({ message: "OTP sent via WhatsApp" });
+
+  } catch (err) {
+    console.error("❌ Twilio Error:", err);
+    res.status(500).json({ message: "Failed to send OTP" });
+  }
 });
-
 
 // ================= VERIFY OTP =================
 app.post("/api/verify-otp", async (req, res) => {

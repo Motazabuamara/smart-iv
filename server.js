@@ -5,7 +5,13 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const path = require("path");
-const app = express();   // 👈 أول شي نعرّف app
+const app = express(); 
+
+function validatePassword(password) {
+  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+  return regex.test(password);
+}  // 👈 أول شي نعرّف app
+
 app.set("trust proxy", 1);   // 🔥 حل مشكلة Render + rate-limit
 
 const mongoose = require("mongoose");
@@ -137,6 +143,12 @@ app.post("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
 
     if (!username || !password || !name || !role) {
       return res.status(400).json({ message: "All fields required" });
+    }
+  // 🔥🔥🔥 هون الإضافة المهمة
+    if (!validatePassword(password)) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters and include uppercase, lowercase, number, and symbol"
+      });
     }
 
     // تحقق إذا المستخدم موجود

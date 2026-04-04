@@ -513,3 +513,17 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 30px;
 }
+
+
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper span {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 18px;
+}

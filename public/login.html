@@ -14,9 +14,18 @@
   <div class="brand-sub">Intelligent IV Monitoring System</div>
 
   <div class="login-card">
-    <input id="username" placeholder="Username">
-    <input id="password" type="password" placeholder="Password">
-    <button type="button" id="loginBtn">Login</button>
+    
+ <input id="username" placeholder="Username">
+
+<div class="password-wrapper">
+  <input id="password" type="password" placeholder="Password">
+
+  <span id="loginEye" onclick="toggleLoginPassword()">
+    👁
+  </span>
+</div>
+
+<button type="button" id="loginBtn">Login</button>
     <p id="errorMsg"></p>
   </div>
 

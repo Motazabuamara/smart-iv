@@ -2,6 +2,20 @@ console.log("ADMIN JS LOADED 🔥");
 
 const token = localStorage.getItem("token");
 
+function togglePassword() {
+  const input = document.getElementById("newPassword");
+  const icon = document.getElementById("eyeIcon");
+
+  if (input.type === "password") {
+    input.type = "text";
+    icon.textContent = "🙈";
+  } else {
+    input.type = "password";
+    icon.textContent = "👁";
+  }
+}
+
+
 if (!token) {
   window.location.href = "login.html";
 }

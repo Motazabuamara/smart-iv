@@ -3,6 +3,19 @@ let patientsData = [];
 let selectedId = null;
 let refreshTimeout;
 
+function toggleLoginPassword() {
+  const input = document.getElementById("password");
+  const icon = document.getElementById("loginEye");
+
+  if (input.type === "password") {
+    input.type = "text";
+    icon.textContent = "🙈";
+  } else {
+    input.type = "password";
+    icon.textContent = "👁";
+  }
+}
+
 // ================= LOGIN =================
 async function login() {
 

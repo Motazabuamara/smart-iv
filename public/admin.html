@@ -22,8 +22,15 @@
     <div class="form-grid">
       <input type="text" id="newUsername" placeholder="Username">
       <input type="text" id="newName" placeholder="Full Name">
-      <input type="password" id="newPassword" placeholder="Password">
+<div style="position: relative;">
+  <input type="password" id="newPassword" placeholder="Password">
 
+  <span id="eyeIcon"
+        onclick="togglePassword()"
+        style="position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer;">
+    👁
+  </span>
+</div>
       <select id="newRole">
         <option value="nurse">Nurse</option>
         <option value="admin">Admin</option>

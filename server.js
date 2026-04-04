@@ -287,10 +287,53 @@ const token = jwt.sign(
 });
 
 
+app.post("/api/send-otp", async (req, res) => {
+  const { username } = req.body;
+
+  const user = await User.findOne({ username });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  user.otp = otp;
+  user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 دقائق
+
+  await user.save();
+
+  console.log("🔥 OTP for", user.username, ":", otp);
+
+  res.json({ message: "OTP sent" });
+});
 
 
+// ================= VERIFY OTP =================
+app.post("/api/verify-otp", async (req, res) => {
+  const { username, otp } = req.body;
 
+  const user = await User.findOne({ username });
 
+  if (!user || user.otp !== otp || Date.now() > user.otpExpires) {
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+
+  // حذف OTP بعد الاستخدام
+  user.otp = null;
+  user.otpExpires = null;
+  await user.save();
+
+  const token = jwt.sign(
+    {
+      username: user.username,
+      role: user.role
+    },
+    process.env.SECRET_KEY,
+    { expiresIn: "2h" }
+  );
+
+  res.json({ token });
+});
 
 // ================= ADD PATIENT =================
 app.post("/api/patients", authenticateToken, async (req, res) => {

@@ -141,6 +141,7 @@ document.getElementById("createUserBtn")
     const name = document.getElementById("newName").value;
     const password = document.getElementById("newPassword").value;
     const role = document.getElementById("newRole").value;
+    const phone = document.getElementById("newPhone").value;
 
     fetch("/admin/users", {
       method: "POST",
@@ -149,8 +150,7 @@ document.getElementById("createUserBtn")
        "Authorization": "Bearer " + localStorage.getItem("token")
 
       },
-      body: JSON.stringify({ username, password, name, role })
-    })
+      body: JSON.stringify({ username, password, name, role, phone })    })
     .then(res => res.json())
     .then(data => {
       alert(data.message);

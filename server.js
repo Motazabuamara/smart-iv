@@ -140,9 +140,9 @@ app.get("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
 
 app.post("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { username, password, name, role } = req.body;
+   const { username, password, name, role, phone } = req.body;
 
-    if (!username || !password || !name || !role) {
+    if (!username || !password || !name || !role || !phone) {
       return res.status(400).json({ message: "All fields required" });
     }
   // 🔥🔥🔥 هون الإضافة المهمة
@@ -164,7 +164,8 @@ app.post("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
       username,
       password: hashedPassword,
       name,
-      role
+      role,
+      phone
     });
 
     await addLog("CREATE_USER", {

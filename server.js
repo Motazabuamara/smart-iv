@@ -363,7 +363,10 @@ app.post("/api/verify-otp", async (req, res) => {
 );
   console.log("✅ OTP SUCCESS");
 
-  res.json({ token });
+  res.json({
+  token,
+  role: user.role
+});
 });
 
 // ================= ADD PATIENT =================

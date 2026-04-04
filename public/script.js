@@ -78,6 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (data.token) {
         localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.role);
         localStorage.setItem("nurse", window.currentUser);
 
         window.location.href = "dashboard.html";

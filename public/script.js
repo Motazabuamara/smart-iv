@@ -16,8 +16,11 @@ function toggleLoginPassword() {
   }
 }
 
+
 // ================= LOGIN =================
 async function login() {
+
+    document.getElementById("loginBtn").disabled = true;
 
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
@@ -28,25 +31,63 @@ async function login() {
     body: JSON.stringify({ username, password })
   });
 
- const data = await res.json();
+  const data = await res.json();
 
-if (data.success) {
-  localStorage.setItem("nurse", data.name);
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("role", data.role);
-   
+  if (!res.ok || !data.success) {
+    document.getElementById("errorMsg").innerText = "Invalid login";
+      document.getElementById("loginBtn").disabled = false;
 
-  window.location.href = "dashboard.html"; // النافذة الأساسية تروح داشبورد
+    return;
+  }
 
-  
+  // 🔥 خزّن المستخدم مؤقت
+  window.currentUser = username;
 
-} else {
-  document.getElementById("error").innerText = "Invalid login";
+  // 🔥 اطلب OTP
+  await fetch("/api/send-otp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username })
+  });
+
+  // 🔥 افتح popup
+  document.getElementById("otpModal").style.display = "flex";
 }
-}
 
 
+// ================= VERIFY OTP =================
+document.addEventListener("DOMContentLoaded", () => {
 
+  const verifyBtn = document.getElementById("verifyOtpBtn");
+
+  if (verifyBtn) {
+    verifyBtn.addEventListener("click", async () => {
+
+      const otp = document.getElementById("otpInput").value;
+
+      const res = await fetch("/api/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: window.currentUser,
+          otp
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("nurse", window.currentUser);
+
+        window.location.href = "dashboard.html";
+      } else {
+        alert("Invalid OTP");
+      }
+    });
+  }
+
+});
 
 async function loadPatients(keepSelection = false) {
   const token = localStorage.getItem("token");

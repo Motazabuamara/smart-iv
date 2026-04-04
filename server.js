@@ -353,14 +353,14 @@ app.post("/api/verify-otp", async (req, res) => {
   await user.save();
 
   const token = jwt.sign(
-    {
-      username: user.username,
-      role: user.role
-    },
-    process.env.SECRET_KEY,
-    { expiresIn: "2h" }
-  );
-
+  {
+    username: user.username,
+    name: user.name,
+    role: user.role || "nurse"
+  },
+  SECRET_KEY,
+  { expiresIn: "2h" }
+);
   console.log("✅ OTP SUCCESS");
 
   res.json({ token });

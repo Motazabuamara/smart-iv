@@ -27,16 +27,32 @@
 
 <button type="button" id="loginBtn">Login</button>
     <p id="errorMsg"></p>
-    <a href="forgot.html" class="forgot-link">Forgot Password?</a>
-  </div>
+<a href="#" onclick="openForgot()" class="forgot-link">
+  Forgot Password?
+</a>  </div>
 
 </div>
 
+<!-- OTP MODAL -->
 <div id="otpModal" class="otp-modal" style="display:none;">
   <div class="otp-box">
     <h3>Enter OTP</h3>
     <input id="otpInput" placeholder="Enter code">
     <button id="verifyOtpBtn">Verify</button>
+  </div>
+</div>
+
+<!-- FORGOT MODAL -->
+<div id="forgotModal" class="otp-modal" style="display:none;">
+  <div class="otp-box">
+    <h3>Reset Password</h3>
+
+    <input id="forgotUsername" placeholder="Username">
+    <input id="forgotPhone" placeholder="Phone (+962...)">
+
+    <button onclick="sendResetOTP()">Send OTP</button>
+
+    <p id="forgotMsg"></p>
   </div>
 </div>
 

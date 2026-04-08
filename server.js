@@ -372,18 +372,20 @@ app.post("/api/verify-otp", async (req, res) => {
 
 // ================= FORGOT PASSWORD =================
 app.post("/api/forgot-password", async (req, res) => {
-  const { username } = req.body;
+  const { username, phone } = req.body;
 
   const user = await User.findOne({ username });
-  if (!user) {
-    return res.status(400).json({ message: "User not found" });
+
+  if (!user || user.phone !== phone) {
+    return res.status(400).json({
+      message: "User not found or phone mismatch"
+    });
   }
 
   const otp = String(Math.floor(100000 + Math.random() * 900000));
 
   user.otp = otp;
   user.otpExpires = new Date(Date.now() + 5 * 60 * 1000);
-
   await user.save();
 
   await client.messages.create({

@@ -9,7 +9,7 @@ function toggleLoginPassword() {
 
   if (input.type === "password") {
     input.type = "text";
-    icon.textContent = "🙈";
+    icon.textContent = "👁";
   } else {
     input.type = "password";
     icon.textContent = "👁";
@@ -419,4 +419,38 @@ if (newBagBtn) {
     await loadPatients(true);
 
   });
+}
+
+// ================= FORGOT PASSWORD =================
+
+function openForgot() {
+  document.getElementById("forgotModal").style.display = "flex";
+}
+
+async function sendResetOTP() {
+  const username = document.getElementById("forgotUsername").value;
+  const phone = document.getElementById("forgotPhone").value;
+
+  const res = await fetch("/api/forgot-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ username, phone })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("forgotMsg").innerText = data.message;
+
+  if (res.ok) {
+    // سكّر forgot
+    document.getElementById("forgotModal").style.display = "none";
+
+    // افتح OTP
+    document.getElementById("otpModal").style.display = "flex";
+
+    // خزن المستخدم
+    window.currentUser = username;
+  }
 }

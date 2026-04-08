@@ -2,7 +2,6 @@ let nurse = null;
 let patientsData = [];
 let selectedId = null;
 let refreshTimeout;
-
 function toggleLoginPassword() {
   const input = document.getElementById("password");
   const icon = document.getElementById("loginEye");
@@ -336,8 +335,10 @@ async function deletePatient() {
 
 
 function logout() {
-  localStorage.removeItem("nurse");
   localStorage.removeItem("token");
+  localStorage.removeItem("nurse");
+  localStorage.removeItem("role");
+
   window.location.href = "login.html";
 }
 
@@ -452,10 +453,16 @@ if (newBagBtn) {
   });
 }
 
+
+
 // ================= FORGOT PASSWORD =================
 
 function openForgot() {
   document.getElementById("forgotModal").style.display = "flex";
+   // 🔥 نظف الحقول
+  document.getElementById("forgotUsername").value = "";
+  document.getElementById("forgotPhone").value = "";
+  document.getElementById("forgotMsg").innerText = "";
 }
 
 async function sendResetOTP() {
@@ -481,4 +488,12 @@ async function sendResetOTP() {
     document.getElementById("otpModal").style.display = "flex";
     window.currentUser = username;
   }
+}
+
+// ================= CLOSE MODALS =================
+function closeModals() {
+  document.getElementById("otpModal").style.display = "none";
+  document.getElementById("forgotModal").style.display = "none";
+
+  window.isResetFlow = false;
 }

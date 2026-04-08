@@ -36,6 +36,8 @@
 <!-- OTP MODAL -->
 <div id="otpModal" class="otp-modal" style="display:none;">
   <div class="otp-box">
+    <span onclick="closeModals()" style="cursor:pointer;float:right;">✖</span>
+
     <h3>Enter OTP</h3>
     <input id="otpInput" placeholder="Enter code">
     <button id="verifyOtpBtn">Verify</button>
@@ -45,6 +47,7 @@
 <!-- FORGOT MODAL -->
 <div id="forgotModal" class="otp-modal" style="display:none;">
   <div class="otp-box">
+    <span onclick="closeModals()" style="cursor:pointer;float:right;">✖</span>
     <h3>Reset Password</h3>
 
     <input id="forgotUsername" placeholder="Username">

@@ -562,3 +562,13 @@ body {
   text-decoration: underline;
   color: #ffffff;
 }
+
+.otp-box span {
+  font-size: 18px;
+  font-weight: bold;
+  color: #999;
+}
+
+.otp-box span:hover {
+  color: red;
+}

@@ -369,6 +369,64 @@ app.post("/api/verify-otp", async (req, res) => {
 });
 });
 
+
+// ================= FORGOT PASSWORD =================
+app.post("/api/forgot-password", async (req, res) => {
+  const { username } = req.body;
+
+  const user = await User.findOne({ username });
+  if (!user) {
+    return res.status(400).json({ message: "User not found" });
+  }
+
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+
+  user.otp = otp;
+  user.otpExpires = new Date(Date.now() + 5 * 60 * 1000);
+
+  await user.save();
+
+  await client.messages.create({
+    from: "whatsapp:+14155238886",
+    to: `whatsapp:${user.phone}`,
+    body: `Reset code: ${otp}`
+  });
+
+  res.json({ message: "OTP sent" });
+});
+
+
+
+
+
+app.post("/api/reset-password", async (req, res) => {
+  const { username, otp, newPassword } = req.body;
+
+  const user = await User.findOne({ username });
+  if (!user) return res.status(400).json({ message: "User not found" });
+
+  if (!user.otp || user.otp !== otp) {
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+
+  if (user.otpExpires < Date.now()) {
+    return res.status(400).json({ message: "OTP expired" });
+  }
+
+  const hashed = await bcrypt.hash(newPassword, 10);
+
+  user.password = hashed;
+  user.otp = null;
+  user.otpExpires = null;
+
+  await user.save();
+
+  res.json({ message: "Password reset successful" });
+});
+
+
+
+
 // ================= ADD PATIENT =================
 app.post("/api/patients", authenticateToken, async (req, res) => {
   try {

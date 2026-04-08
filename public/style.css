@@ -548,3 +548,17 @@ body {
   border-radius: 10px;
   text-align: center;
 }
+
+.forgot-link {
+  display: block;
+  margin-top: 12px;
+  font-size: 14px;
+  color: #4ea3ff;
+  text-decoration: none;
+  text-align: center;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+  color: #ffffff;
+}

@@ -348,8 +348,8 @@ app.post("/api/verify-otp", async (req, res) => {
   }
 
   // نجاح
-  user.otp = null;
-  user.otpExpires = null;
+  //user.otp = null;
+  //user.otpExpires = null;
   await user.save();
 
   const token = jwt.sign(

@@ -60,43 +60,65 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const verifyBtn = document.getElementById("verifyOtpBtn");
 
-  if (data.token && !window.isResetFlow) {
-  // 🔥 LOGIN FLOW
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("role", data.role);
-  localStorage.setItem("nurse", window.currentUser);
+  if (verifyBtn) {
+    verifyBtn.addEventListener("click", async () => {
 
-  window.location.href = "dashboard.html";
+      const otp = document.getElementById("otpInput").value;
 
-} else if (window.isResetFlow) {
-  // 🔥 RESET FLOW
-  alert("OTP verified. Now enter new password.");
+      const res = await fetch("/api/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: window.currentUser,
+          otp
+        })
+      });
 
-  document.getElementById("otpModal").style.display = "none";
+      const data = await res.json();
 
-  const newPassword = prompt("Enter new password:");
+      // 🟢 LOGIN FLOW
+      if (data.token && !window.isResetFlow) {
 
-  if (!newPassword) return;
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.role);
+        localStorage.setItem("nurse", window.currentUser);
 
-  await fetch("/api/reset-password", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      username: window.currentUser,
-      otp,
-      newPassword
-    })
-  });
+        window.location.href = "dashboard.html";
+        return;
+      }
 
-  alert("Password reset successful");
+      // 🟡 RESET FLOW
+      if (window.isResetFlow) {
 
-  window.isResetFlow = false;
+        document.getElementById("otpModal").style.display = "none";
 
-} else {
-  alert("Invalid OTP");
-}
+        const newPassword = prompt("Enter new password:");
+
+        if (!newPassword) return;
+
+        await fetch("/api/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: window.currentUser,
+            otp,
+            newPassword
+          })
+        });
+
+        alert("Password reset successful");
+
+        window.isResetFlow = false;
+        return;
+      }
+
+      // ❌ ERROR
+      alert("Invalid OTP");
+
+    });
+  }
+
+});
 
 
 async function loadPatients(keepSelection = false) {

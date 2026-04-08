@@ -77,7 +77,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // 🟢 LOGIN FLOW
       if (data.token && !window.isResetFlow) {
-
         localStorage.setItem("token", data.token);
         localStorage.setItem("role", data.role);
         localStorage.setItem("nurse", window.currentUser);
@@ -89,13 +88,20 @@ document.addEventListener("DOMContentLoaded", () => {
       // 🟡 RESET FLOW
       if (window.isResetFlow) {
 
-        document.getElementById("otpModal").style.display = "none";
+        const newPassword = document.getElementById("newPassword").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
 
-        const newPassword = prompt("Enter new password:");
+        if (!newPassword || !confirmPassword) {
+          alert("Please fill all fields");
+          return;
+        }
 
-        if (!newPassword) return;
+        if (newPassword !== confirmPassword) {
+          alert("Passwords do not match");
+          return;
+        }
 
-        await fetch("/api/reset-password", {
+        const resetRes = await fetch("/api/reset-password", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -105,20 +111,31 @@ document.addEventListener("DOMContentLoaded", () => {
           })
         });
 
+        const resetData = await resetRes.json();
+
+        if (!resetRes.ok) {
+          alert(resetData.message);
+          return;
+        }
+
         alert("Password reset successful");
 
+        document.getElementById("newPassword").value = "";
+        document.getElementById("confirmPassword").value = "";
+        document.getElementById("otpInput").value = "";
+
         window.isResetFlow = false;
+
+        window.location.href = "login.html";
         return;
       }
 
-      // ❌ ERROR
       alert("Invalid OTP");
 
     });
   }
 
 });
-
 
 async function loadPatients(keepSelection = false) {
   const token = localStorage.getItem("token");
@@ -128,6 +145,7 @@ async function loadPatients(keepSelection = false) {
   const res = await fetch("/api/patients", {
     headers: {
       "Authorization": "Bearer " + token
+      
     }
   });
 
@@ -468,10 +486,9 @@ function openForgot() {
 async function sendResetOTP() {
   const username = document.getElementById("forgotUsername").value;
   const phone = document.getElementById("forgotPhone").value;
-
-  window.isResetFlow = true; // 🔥🔥🔥
-
-  const res = await fetch("/api/forgot-password", {
+ window.isResetFlow = true; // 🔥🔥🔥
+  // 🔥 إظهار حقول الباسورد
+const res = await fetch("/api/forgot-password", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -482,12 +499,23 @@ async function sendResetOTP() {
   const data = await res.json();
 
   document.getElementById("forgotMsg").innerText = data.message;
-
-  if (res.ok) {
-    document.getElementById("forgotModal").style.display = "none";
-    document.getElementById("otpModal").style.display = "flex";
-    window.currentUser = username;
+ if (!res.ok) {
+    return; // ❌ وقف إذا في خطأ
   }
+
+  // ✅ هون فقط بعد النجاح
+
+  document.getElementById("forgotModal").style.display = "none";
+  document.getElementById("otpModal").style.display = "flex";
+
+  // 🔥 إظهار حقول الباسورد
+  document.getElementById("newPassWrapper").style.display = "block";
+document.getElementById("confirmPassWrapper").style.display = "block";
+
+  // 🔥 تنظيف OTP
+  document.getElementById("otpInput").value = "";
+
+  window.currentUser = username;
 }
 
 // ================= CLOSE MODALS =================
@@ -496,4 +524,26 @@ function closeModals() {
   document.getElementById("forgotModal").style.display = "none";
 
   window.isResetFlow = false;
+}
+
+// ================= TOGGLE PASSWORD =================
+
+function toggleNewPassword() {
+  const input = document.getElementById("newPassword");
+
+  if (input.type === "password") {
+    input.type = "text";
+  } else {
+    input.type = "password";
+  }
+}
+
+function toggleConfirmPassword() {
+  const input = document.getElementById("confirmPassword");
+
+  if (input.type === "password") {
+    input.type = "text";
+  } else {
+    input.type = "password";
+  }
 }

@@ -60,35 +60,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const verifyBtn = document.getElementById("verifyOtpBtn");
 
-  if (verifyBtn) {
-    verifyBtn.addEventListener("click", async () => {
+  if (data.token && !window.isResetFlow) {
+  // 🔥 LOGIN FLOW
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("role", data.role);
+  localStorage.setItem("nurse", window.currentUser);
 
-      const otp = document.getElementById("otpInput").value;
+  window.location.href = "dashboard.html";
 
-      const res = await fetch("/api/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: window.currentUser,
-          otp
-        })
-      });
+} else if (window.isResetFlow) {
+  // 🔥 RESET FLOW
+  alert("OTP verified. Now enter new password.");
 
-      const data = await res.json();
+  document.getElementById("otpModal").style.display = "none";
 
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("role", data.role);
-        localStorage.setItem("nurse", window.currentUser);
+  const newPassword = prompt("Enter new password:");
 
-        window.location.href = "dashboard.html";
-      } else {
-        alert("Invalid OTP");
-      }
-    });
-  }
+  if (!newPassword) return;
 
-});
+  await fetch("/api/reset-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      username: window.currentUser,
+      otp,
+      newPassword
+    })
+  });
+
+  alert("Password reset successful");
+
+  window.isResetFlow = false;
+
+} else {
+  alert("Invalid OTP");
+}
+
 
 async function loadPatients(keepSelection = false) {
   const token = localStorage.getItem("token");
@@ -431,6 +440,8 @@ async function sendResetOTP() {
   const username = document.getElementById("forgotUsername").value;
   const phone = document.getElementById("forgotPhone").value;
 
+  window.isResetFlow = true; // 🔥🔥🔥
+
   const res = await fetch("/api/forgot-password", {
     method: "POST",
     headers: {
@@ -444,13 +455,8 @@ async function sendResetOTP() {
   document.getElementById("forgotMsg").innerText = data.message;
 
   if (res.ok) {
-    // سكّر forgot
     document.getElementById("forgotModal").style.display = "none";
-
-    // افتح OTP
     document.getElementById("otpModal").style.display = "flex";
-
-    // خزن المستخدم
     window.currentUser = username;
   }
 }

@@ -648,6 +648,8 @@ app.post("/api/patients/:id/new-bag", authenticateToken, async (req, res) => {
 // ================= SENSOR UPDATE =================
 app.post("/api/sensor", async (req, res) => {
 
+  console.log("📡 Incoming Request from Sensor! Key:", req.headers["x-device-key"]);
+  
    if (req.headers["x-device-key"] !== DEVICE_SECRET) {
     return res.status(403).json({ message: "Unauthorized device" });
   }
@@ -656,8 +658,9 @@ app.post("/api/sensor", async (req, res) => {
     const { patientId, weight } = req.body;
 
     const patient = await Patient.findOne({
-  patientId: patientId
+  room: patientId
 });
+
 
 
     if (!patient) {

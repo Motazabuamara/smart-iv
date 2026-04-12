@@ -1,49 +1,25 @@
 require("dotenv").config();
 const express = require("express");
-const mongoose = require("mongoose");
+const twilio = require("twilio");
+
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const path = require("path");
-const helmet = require("helmet");
-const rateLimit = require("express-rate-limit");
-const http = require("http");
-const { Server } = require("socket.io");
-const twilio = require("twilio");
+const app = express(); 
 
-// ================= 1. الإعدادات الأساسية =================
-const app = express();
-const PORT = process.env.PORT || 5000;
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: "*" }
-});
+function validatePassword(password) {
+  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+  return regex.test(password);
+}  // 👈 أول شي نعرّف app
 
-const SECRET_KEY = process.env.SECRET_KEY;
-const DEVICE_SECRET = process.env.DEVICE_SECRET;
-const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+app.set("trust proxy", 1);   // 🔥 حل مشكلة Render + rate-limit
 
-// ================= 2. Middlewares (الحماية والترتيب) =================
-app.set("trust proxy", 1);
-app.use(helmet({
-  contentSecurityPolicy: false, // لضمان عمل الـ Socket.io والـ Frontend بسلاسة
-}));
-app.use(cors());
-app.use(express.json());
-app.use(express.static("public"));
-
-// تعديل الـ Rate Limit لضمان عدم حجب الأردوينو (Cyber-Physical Reliability)
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 500, 
-  skip: (req) => req.path === "/api/sensor" // استثناء الأردوينو من الحظر
-});
-app.use(limiter);
-
-// ================= 3. قاعدة البيانات والموديلات =================
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected Successfully"))
-  .catch(err => console.error("❌ MongoDB Connection Error:", err));
+const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
   username: { type: String, unique: true },
@@ -51,23 +27,27 @@ const userSchema = new mongoose.Schema({
   name: String,
   role: { type: String, default: "nurse" },
   phone: { type: String, unique: true },
-  otp: String,
-  otpExpires: Date
+   otp: String,          // 🔥 أضف هذا
+  otpExpires: Date      // 🔥 وأضف هذا
+
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);
 
-const Log = mongoose.model("Log", new mongoose.Schema({
+const logSchema = new mongoose.Schema({
   action: String,
   performedBy: String,
   target: String,
   ip: String
-}, { timestamps: true }));
+}, { timestamps: true });
+
+
+const Log = mongoose.model("Log", logSchema);
 
 const patientSchema = new mongoose.Schema({
   name: String,
-  patientId: String, // ID المريض الفريد (Timestamp)
-  room: String,      // رقم السرير (المستخدم للربط مع الأردوينو)
+  patientId: String,
+  room: String,
   fluid: String,
   totalML: Number,
   remainingML: Number,
@@ -79,21 +59,53 @@ const patientSchema = new mongoose.Schema({
 patientSchema.index({ room: 1 }, { unique: true });
 const Patient = mongoose.model("Patient", patientSchema);
 
-// ================= 4. الدوال المساعدة =================
-function validatePassword(password) {
-  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-  return regex.test(password);
-}
+
+
+app.use(cors());         // 👈 بعدها نستخدمه
+app.use(express.json());
+app.use(express.static("public"));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
+
+const SECRET_KEY = process.env.SECRET_KEY;
+const DEVICE_SECRET = process.env.DEVICE_SECRET;
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => console.error("❌ MongoDB Error:", err));
+
 
 async function addLog(action, details = {}) {
-  try { await Log.create({ action, ...details }); } 
-  catch (err) { console.error("❌ Log error:", err); }
+
+  console.log("🔥 ADDLOG CALLED:", action);
+
+  try {
+
+    const created = await Log.create({
+      action,
+      ...details
+    });
+
+    console.log("✅ LOG SAVED:", created._id);
+
+  } catch (err) {
+    console.error("❌ Log error:", err);
+  }
 }
+
+
+
+
+
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
+
   if (!token) return res.sendStatus(401);
+
   jwt.verify(token, SECRET_KEY, (err, user) => {
     if (err) return res.sendStatus(403);
     req.user = user;
@@ -102,46 +114,346 @@ function authenticateToken(req, res, next) {
 }
 
 function requireAdmin(req, res, next) {
-  if (!req.user || req.user.role !== "admin") return res.status(403).json({ message: "Admins only" });
+  console.log("REQ.USER:", req.user);   // 👈 أضف هذا السطر
+
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ message: "Admins only" });
+  }
+
   next();
 }
 
-// ================= 5. المسارات (Routes) =================
 
-app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "login.html")));
 
-// --- Auth & OTP ---
-app.post("/api/login", async (req, res) => {
-  const { username, password } = req.body;
-  const user = await User.findOne({ username });
-  if (!user || !(await bcrypt.compare(password, user.password))) return res.status(401).json({ success: false });
-
-  const token = jwt.sign({ username: user.username, name: user.name, role: user.role || "nurse" }, SECRET_KEY, { expiresIn: "2h" });
-  await addLog("LOGIN", { performedBy: user.username, ip: req.ip });
-  res.json({ success: true, token, name: user.name, role: user.role });
+app.get("/admin-data", authenticateToken, requireAdmin, (req, res) => {
+  res.json({ message: "Welcome Admin 🔥" });
 });
+
+app.get("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+
+    const users = await User.find({}, "-password"); 
+    // -password يعني استثناء حقل الباسورد
+
+    res.json(users);
+
+  } catch (err) {
+    res.status(500).json({ message: "Error reading users" });
+  }
+});
+
+
+
+
+
+app.post("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+   const { username, password, name, role, phone } = req.body;
+
+    if (!username || !password || !name || !role || !phone) {
+      return res.status(400).json({ message: "All fields required" });
+    }
+  // 🔥🔥🔥 هون الإضافة المهمة
+    if (!validatePassword(password)) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters and include uppercase, lowercase, number, and symbol"
+      });
+    }
+
+    // تحقق إذا المستخدم موجود
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({ message: "Username already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await User.create({
+      username,
+      password: hashedPassword,
+      name,
+      role,
+      phone
+    });
+
+    await addLog("CREATE_USER", {
+      performedBy: req.user.username,
+      target: username,
+      ip: req.ip
+    });
+
+    res.json({ message: "User created successfully 🔥" });
+
+  } catch (err) {
+    res.status(500).json({ message: "Error creating user" });
+  }
+});
+
+
+
+
+
+
+app.get("/admin/logs", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const logs = await Log.find().sort({ createdAt: -1 });
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ message: "Error reading logs" });
+  }
+});
+
+app.delete("/admin/users/:id", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.username === req.user.username) {
+      return res.status(400).json({ message: "You cannot delete yourself" });
+    }
+
+    await user.deleteOne();
+
+    await addLog("DELETE_USER", {
+      performedBy: req.user.username,
+      target: user.username,
+      ip: req.ip
+    });
+
+    res.json({ message: "User deleted successfully 🔥" });
+
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting user" });
+  }
+});
+
+
+const helmet = require("helmet");
+app.use(helmet());
+const rateLimit = require("express-rate-limit");
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 دقيقة
+  max: 100 // 100 طلب لكل IP
+});
+
+app.use(limiter);
+
+
+
+
+
+// ================= LOGIN =================
+app.post("/api/login", async (req, res) => {
+
+  const { username, password } = req.body;
+
+  const user = await User.findOne({ username });
+
+
+  if (!user) {
+    console.log("❌ LOGIN FAILED (no user):", username);
+    return res.status(401).json({ success: false });
+  }
+
+  const valid = await bcrypt.compare(password, user.password);
+
+  if (!valid) {
+  return res.status(401).json({ success: false });
+}
+
+console.log("✅ LOGIN SUCCESS:", username);
+
+await addLog("LOGIN", {
+  performedBy: user.username,
+  ip: req.ip
+});
+
+
+const token = jwt.sign(
+  { 
+    username: user.username,
+    name: user.name,
+    role: user.role || "nurse"
+    
+  },
+  SECRET_KEY,
+  { expiresIn: "2h" }
+);
+
+
+  res.json({
+    success: true,
+    token,
+    name: user.name,
+      role: user.role || "nurse"
+  });
+
+});
+
 
 app.post("/api/send-otp", async (req, res) => {
   const { username } = req.body;
+
   const user = await User.findOne({ username });
-  if (!user) return res.status(404).json({ message: "User not found" });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
   const otp = String(Math.floor(100000 + Math.random() * 900000));
+
+  user.otp = otp;
+  user.otpExpires = new Date(Date.now() + 5 * 60 * 1000);
+
+  await user.save();
+
+  try {
+    await client.messages.create({
+      from: "whatsapp:+14155238886", // sandbox Twilio
+      to: `whatsapp:${user.phone}`,  // 🔥 رقم المستخدم من الداتا
+      body: `Your Smart IV OTP code is: ${otp}`
+    });
+
+    console.log("✅ OTP SENT:", otp);
+
+    res.json({ message: "OTP sent via WhatsApp" });
+
+  } catch (err) {
+    console.error("❌ Twilio Error:", err);
+    res.status(500).json({ message: "Failed to send OTP" });
+  }
+});
+
+// ================= VERIFY OTP =================
+app.post("/api/verify-otp", async (req, res) => {
+  const { username, otp } = req.body;
+
+  const user = await User.findOne({ username });
+
+  if (!user) {
+    console.log("❌ No user");
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+
+  console.log("🔍 DB OTP:", user.otp);
+  console.log("🔍 Entered OTP:", otp);
+
+  // 🔥 عطّل expiry مؤقتًا
+  if (String(user.otp) !== String(otp)) {
+    console.log("❌ OTP mismatch");
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+
+  // نجاح
+  //user.otp = null;
+  //user.otpExpires = null;
+  await user.save();
+
+  const token = jwt.sign(
+  {
+    username: user.username,
+    name: user.name,
+    role: user.role || "nurse"
+  },
+  SECRET_KEY,
+  { expiresIn: "2h" }
+);
+  console.log("✅ OTP SUCCESS");
+
+  res.json({
+  token,
+  role: user.role
+});
+});
+
+
+// ================= FORGOT PASSWORD =================
+app.post("/api/forgot-password", async (req, res) => {
+  const { username, phone } = req.body;
+
+  const user = await User.findOne({ username });
+
+  if (!user || user.phone !== phone) {
+    return res.status(400).json({
+      message: "User not found or phone mismatch"
+    });
+  }
+
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+
   user.otp = otp;
   user.otpExpires = new Date(Date.now() + 5 * 60 * 1000);
   await user.save();
-  try {
-    await client.messages.create({ from: "whatsapp:+14155238886", to: `whatsapp:${user.phone}`, body: `Your Smart IV OTP code is: ${otp}` });
-    res.json({ message: "OTP sent" });
-  } catch (err) { res.status(500).json({ message: "Failed to send OTP" }); }
+
+  await client.messages.create({
+    from: "whatsapp:+14155238886",
+    to: `whatsapp:${user.phone}`,
+    body: `Reset code: ${otp}`
+  });
+
+  res.json({ message: "OTP sent" });
 });
 
-// --- Patient Management ---
+
+
+
+
+app.post("/api/reset-password", async (req, res) => {
+  const { username, otp, newPassword } = req.body;
+
+  const user = await User.findOne({ username });
+  if (!user) return res.status(400).json({ message: "User not found" });
+
+  if (!user.otp || user.otp !== otp) {
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+
+  if (user.otpExpires < Date.now()) {
+    return res.status(400).json({ message: "OTP expired" });
+  }
+
+  const hashed = await bcrypt.hash(newPassword, 10);
+
+  user.password = hashed;
+  user.otp = null;
+  user.otpExpires = null;
+
+  await user.save();
+
+  res.json({ message: "Password reset successful" });
+});
+
+
+
+
+// ================= ADD PATIENT =================
 app.post("/api/patients", authenticateToken, async (req, res) => {
   try {
+        console.log("ADD PATIENT BODY:", req.body);
+
     const bed = req.body.bed?.trim();
-    if (!req.body.name?.trim() || !bed || isNaN(Number(req.body.totalML))) return res.status(400).json({ message: "Invalid fields" });
-    const existing = await Patient.findOne({ room: bed });
-    if (existing) return res.status(400).json({ message: "Bed occupied" });
+
+   if (
+  !req.body.name?.trim() ||
+  !bed ||
+  isNaN(Number(req.body.totalML)) ||
+  Number(req.body.totalML) <= 0
+)
+ {
+
+      return res.status(400).json({ message: "All fields required" });
+    }
+
+    const existing = await Patient.findOne({
+  room: bed
+});
+
+    if (existing) {
+      return res.status(400).json({ message: "Bed already occupied" });
+    }
 
     const newPatient = await Patient.create({
       name: req.body.name.trim(),
@@ -154,66 +466,259 @@ app.post("/api/patients", authenticateToken, async (req, res) => {
       status: "Running",
       nurse: req.user.username
     });
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ success: false }); }
-});
 
-app.get("/api/patients", authenticateToken, async (req, res) => {
-  const patients = await Patient.find({ nurse: req.user.username }).sort({ createdAt: -1 });
-  res.json(patients);
-});
-
-// 🔥 SENSOR UPDATE (الجوهرة)
-app.post("/api/sensor", async (req, res) => {
-  if (req.headers["x-device-key"] !== DEVICE_SECRET) return res.status(403).json({ message: "Unauthorized device" });
-  try {
-    const { patientId, weight } = req.body; // هنا الـ patientId هو رقم السرير من الأردوينو
-    const patient = await Patient.findOne({ room: patientId }); 
-
-    if (!patient) return res.status(404).json({ success: false, message: "Bed not found" });
-
-    patient.remainingML = Number(weight);
-    patient.percentage = Math.round((patient.remainingML / patient.totalML) * 100);
-    
-    if (patient.percentage <= 0) patient.status = "Finished";
-    else if (patient.percentage <= 10) patient.status = "Critical";
-    else patient.status = "Running";
-
-    await patient.save();
-
-    // بث التحديث للـ Dashboard فوراً
-    io.emit("patientUpdated", {
-      patientId: patient.patientId,
-      remainingML: patient.remainingML,
-      percentage: patient.percentage,
-      status: patient.status
+    await addLog("CREATE_PATIENT", {
+      performedBy: req.user.username,
+      target: newPatient.name,
+      ip: req.ip
     });
 
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ success: false }); }
+
+  } catch (err) {
+    console.error("Create patient error:", err);
+    res.status(500).json({ success: false });
+  }
 });
 
-// فحص حالة الصمام للأردوينو
-app.get("/api/hardware/status/:room", async (req, res) => {
+
+
+
+
+
+
+
+
+
+// ================= GET PATIENTS =================
+app.get("/api/patients", authenticateToken, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ room: req.params.room });
-    if (!patient) return res.send("0");
-    res.send(patient.status === "Running" || patient.status === "Low" ? "1" : "0");
-  } catch (err) { res.send("0"); }
+    const nurseUsername = req.user.username;
+
+    const nursePatients = await Patient.find({
+      nurse: nurseUsername
+    }).sort({ createdAt: -1 });
+
+    res.json(nursePatients);
+
+  } catch (err) {
+    console.error("Get patients error:", err);
+    res.status(500).json({ success: false });
+  }
 });
 
-// --- Admin Routes ---
-app.get("/admin/users", authenticateToken, requireAdmin, async (req, res) => {
-  const users = await User.find({}, "-password");
-  res.json(users);
+
+
+
+// ================= UPDATE =================
+app.put("/api/patients/:id", authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const patient = await Patient.findOne({
+      patientId: id,
+      nurse: req.user.username
+    });
+
+    if (!patient) {
+      return res.status(404).json({ success: false });
+    }
+
+    const newBed = req.body.bed?.trim();
+
+    // 🔒 فحص السرير إذا تغير
+    if (newBed && newBed !== patient.room) {
+
+      const existingBed = await Patient.findOne({
+  room: newBed
 });
 
-// ================= 6. تشغيل السيرفر =================
+      if (existingBed) {
+        return res.status(400).json({ message: "Bed already occupied" });
+      }
+
+      patient.room = newBed;
+    }
+
+    const oldRemaining = patient.remainingML;
+
+    if (req.body.totalML) {
+      patient.totalML = Number(req.body.totalML);
+    }
+
+    patient.name = req.body.name || patient.name;
+    patient.fluid = req.body.fluid || patient.fluid;
+
+    patient.remainingML = oldRemaining;
+
+    patient.percentage = Math.round(
+      (patient.remainingML / patient.totalML) * 100
+    );
+
+    patient.status =
+      patient.percentage <= 0 ? "Finished" : "Running";
+
+    await patient.save();
+
+    await addLog("UPDATE_PATIENT", {
+      performedBy: req.user.username,
+      target: id,
+      ip: req.ip
+    });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+
+
+// ================= DELETE =================
+app.delete("/api/patients/:id", authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const deletedPatient = await Patient.findOneAndDelete({
+      patientId: id,
+      nurse: req.user.username
+    });
+
+    if (!deletedPatient) {
+      return res.status(404).json({ success: false, message: "Patient not found" });
+    }
+
+    await addLog("DELETE_PATIENT", {
+      performedBy: req.user.username,
+      target: id,
+      ip: req.ip
+    });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Delete patient error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+
+// ================= NEW IV BAG =================
+
+app.post("/api/patients/:id/new-bag", authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { totalML, fluid } = req.body;
+
+    const patient = await Patient.findOne({
+      patientId: id,
+      nurse: req.user.username
+    });
+
+    if (!patient) {
+      return res.status(404).json({ success: false, message: "Patient not found" });
+    }
+
+    patient.totalML = Number(totalML);
+    patient.remainingML = Number(totalML);
+    patient.percentage = 100;
+    patient.status = "Running";
+
+    if (fluid) {
+  patient.fluid = fluid;
+}
+    await patient.save();
+
+    await addLog("NEW_IV_BAG", {
+      performedBy: req.user.username,
+      target: id,
+      ip: req.ip
+    });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("New bag error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+// ================= SENSOR UPDATE =================
+app.post("/api/sensor", async (req, res) => {
+
+   if (req.headers["x-device-key"] !== DEVICE_SECRET) {
+    return res.status(403).json({ message: "Unauthorized device" });
+  }
+
+  try {
+    const { patientId, weight } = req.body;
+
+    const patient = await Patient.findOne({
+  patientId: patientId
+});
+
+
+    if (!patient) {
+      return res.status(404).json({ success: false, message: "Patient not found" });
+    }
+
+    patient.remainingML = Number(weight);
+
+    patient.percentage = Math.round(
+      (patient.remainingML / patient.totalML) * 100
+    );
+
+    if (patient.percentage <= 0) {
+  patient.status = "Finished";
+} else if (patient.percentage <= 10) {
+  patient.status = "Critical";
+} else if (patient.percentage <= 30) {
+  patient.status = "Low";
+} else {
+  patient.status = "Running";
+}
+
+
+    await patient.save();
+io.emit("patientUpdated", {
+  patientId: patient.patientId,
+  remainingML: patient.remainingML,
+  percentage: patient.percentage,
+  status: patient.status
+});
+
+ 
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Sensor update error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+
+const PORT = process.env.PORT || 5000;
+
+const http = require("http");
+const { Server } = require("socket.io");
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*"
+  }
+});
+
 io.on("connection", (socket) => {
   console.log("🔌 Client connected:", socket.id);
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 Smart IV Server Running on port ${PORT}`);
-  console.log("🔥 LOGIC: Bed-to-Arduino Sync Active");
+  console.log(`Server running on port ${PORT}`);
 });
+
+
+console.log("🔥 SERVER VERSION 3.0 ACTIVE 🔥");

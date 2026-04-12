@@ -646,51 +646,45 @@ app.post("/api/patients/:id/new-bag", authenticateToken, async (req, res) => {
 });
 
 // ================= SENSOR UPDATE =================
+// ================= SENSOR UPDATE (UPDATED VERSION) =================
 app.post("/api/sensor", async (req, res) => {
-
-   if (req.headers["x-device-key"] !== DEVICE_SECRET) {
+  // فحص مفتاح الأمان
+  if (req.headers["x-device-key"] !== DEVICE_SECRET) {
     return res.status(403).json({ message: "Unauthorized device" });
   }
 
   try {
-    const { patientId, weight } = req.body;
+    const { patientId, weight } = req.body; // patientId هون قيمتها "1" من الأردوينو
 
-    const patient = await Patient.findOne({
-  patientId: patientId
-});
-
+    // 🔥 التعديل الجوهري: ابحث عن المريض برقم السرير (room)
+    const patient = await Patient.findOne({ room: patientId }); 
 
     if (!patient) {
-      return res.status(404).json({ success: false, message: "Patient not found" });
+      console.log("❌ Sensor Error: Bed", patientId, "not found in Database");
+      return res.status(404).json({ success: false, message: "Bed not found" });
     }
 
+    // تحديث البيانات في الداتا بيس
     patient.remainingML = Number(weight);
+    patient.percentage = Math.round((patient.remainingML / patient.totalML) * 100);
 
-    patient.percentage = Math.round(
-      (patient.remainingML / patient.totalML) * 100
-    );
-
-    if (patient.percentage <= 0) {
-  patient.status = "Finished";
-} else if (patient.percentage <= 10) {
-  patient.status = "Critical";
-} else if (patient.percentage <= 30) {
-  patient.status = "Low";
-} else {
-  patient.status = "Running";
-}
-
+    // تحديث الحالة
+    if (patient.percentage <= 0) patient.status = "Finished";
+    else if (patient.percentage <= 10) patient.status = "Critical";
+    else if (patient.percentage <= 30) patient.status = "Low";
+    else patient.status = "Running";
 
     await patient.save();
-io.emit("patientUpdated", {
-  patientId: patient.patientId,
-  remainingML: patient.remainingML,
-  percentage: patient.percentage,
-  status: patient.status
-});
 
- 
+    // بث التحديث للـ Dashboard فوراً عبر Socket.io
+    io.emit("patientUpdated", {
+      patientId: patient.patientId, // نرسل الـ ID الأصلي للمتصفح عشان يعرف أي سطر يحدّث
+      remainingML: patient.remainingML,
+      percentage: patient.percentage,
+      status: patient.status
+    });
 
+    console.log(`✅ Bed ${patientId} updated: ${weight}ml (${patient.percentage}%)`);
     res.json({ success: true });
 
   } catch (err) {

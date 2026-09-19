@@ -10,7 +10,31 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const path = require("path");
-const app = express(); 
+const dns = require("dns");
+const OpenAI = require("openai");
+const ollama = new OpenAI({
+  baseURL: "http://localhost:11434/v1",
+  apiKey: "ollama"
+});
+
+dns.setServers([
+  "8.8.8.8",
+  "8.8.4.4"
+]);
+
+
+
+
+
+
+
+
+// ================= AI / MACHINE LEARNING =================
+const {
+  RandomForestRegressor
+} = require("random-forest");
+
+const app = express();
 
 function validatePassword(password) {
   const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
@@ -53,11 +77,354 @@ const patientSchema = new mongoose.Schema({
   remainingML: Number,
   percentage: Number,
   status: String,
-  nurse: String
+  nurse: String,
+
+  // Stand assigned to this patient
+  standId: {
+    type: String,
+    unique: true,
+    sparse: true
+  }
 }, { timestamps: true });
+
 
 patientSchema.index({ room: 1 }, { unique: true });
 const Patient = mongoose.model("Patient", patientSchema);
+
+// ================= AI SENSOR HISTORY =================
+
+const sensorReadingSchema = new mongoose.Schema({
+  patientId: {
+    type: String,
+    required: true
+  },
+
+  weight: {
+    type: Number,
+    required: true
+  },
+
+  timestamp: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+const SensorReading = mongoose.model(
+  "SensorReading",
+  sensorReadingSchema
+);
+
+// ================= AI TRAINING DATA =================
+
+const aiTrainingSchema = new mongoose.Schema({
+
+  totalML: Number,
+
+  remainingML: Number,
+
+  percentage: Number,
+
+  consumptionRate: Number,
+
+  rateChange: Number,
+
+  timeInterval: Number,
+
+  remainingTimeMinutes: Number
+
+});
+
+const AITrainingData = mongoose.model(
+  "AITrainingData",
+  aiTrainingSchema
+);
+
+// ================= AI RANDOM FOREST MODEL =================
+
+let aiModel = null;
+
+// Train Random Forest Model
+
+async function trainAIModel() {
+
+  try {
+
+    console.log("🤖 Starting AI model training...");
+
+    const data = await AITrainingData.find({}).lean();
+
+    if (data.length < 100) {
+
+      console.log(
+        "⚠️ Not enough training data for AI model"
+      );
+
+      return;
+    }
+
+    const trainingSet = data.map(item => [
+
+  Number(item.totalML || 0),
+
+  Number(item.remainingML || 0),
+
+  Number(item.percentage || 0),
+
+  Number(item.consumptionRate || 0),
+
+  Number(item.rateChange || 0),
+
+  Number(item.timeInterval || 0)
+
+]);
+
+    const predictions = data.map(item =>
+
+      Number(item.remainingTimeMinutes || 0)
+
+    );
+
+    console.log(
+      "🧪 Training data size:",
+      trainingSet.length
+    );
+
+    console.log(
+      "🧪 First training sample:",
+      trainingSet[0]
+    );
+
+    console.log(
+      "🧪 First prediction:",
+      predictions[0]
+    );
+
+    // Create Random Forest Regression model
+    aiModel = new RandomForestRegressor({
+
+      nEstimators: 20,
+
+      maxDepth: 10,
+
+      maxFeatures: "auto",
+
+      minSamplesLeaf: 5,
+
+      minInfoGain: 0
+
+    });
+
+    // Train model
+    aiModel.train(
+      trainingSet,
+      predictions
+    );
+
+    console.log(
+      `✅ AI model trained successfully using ${data.length} samples`
+    );
+
+  } catch (error) {
+
+    console.error(
+      "❌ AI model training error:",
+      error
+    );
+
+  }
+
+}
+
+
+// ================= AI PREDICTION API =================
+
+app.get("/api/ai/predict/:patientId", async (req, res) => {
+
+  try {
+
+    if (!aiModel) {
+      return res.status(503).json({
+        success: false,
+        message: "AI model is not trained yet"
+      });
+    }
+
+    const patientId = req.params.patientId;
+
+    // Get patient
+    const patient = await Patient.findOne({
+      patientId: patientId
+    });
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found"
+      });
+    }
+
+    // Get latest sensor readings
+    const readings = await SensorReading.find({
+      patientId: patientId
+    })
+      .sort({ timestamp: -1 })
+      .limit(3);
+
+    if (readings.length < 2) {
+      return res.json({
+        success: true,
+        predictionAvailable: false,
+        message: "Not enough sensor data for AI prediction"
+      });
+    }
+
+    // Latest reading
+    const latest = readings[0];
+
+    // Previous reading
+    const previous = readings[1];
+
+    // Calculate consumption rate
+    const weightDifference =
+      previous.weight - latest.weight;
+
+    const timeDifference =
+      (latest.timestamp - previous.timestamp) / 60000;
+
+    let consumptionRate = 0;
+
+    if (
+      weightDifference > 0 &&
+      timeDifference > 0
+    ) {
+      consumptionRate =
+        weightDifference / timeDifference;
+    }
+
+    // Calculate rate change
+    let rateChange = 0;
+
+    if (readings.length >= 3) {
+
+      const older = readings[2];
+
+      const previousWeightDifference =
+        older.weight - previous.weight;
+
+      const previousTimeDifference =
+        (previous.timestamp - older.timestamp) / 60000;
+
+      if (
+        previousWeightDifference > 0 &&
+        previousTimeDifference > 0
+      ) {
+
+        const previousRate =
+          previousWeightDifference /
+          previousTimeDifference;
+
+        rateChange =
+          consumptionRate - previousRate;
+
+      }
+
+    }
+
+    // Time interval in minutes
+    const timeInterval =
+      timeDifference > 0
+        ? timeDifference
+        : 1;
+
+    // AI input
+   const aiInput = [[
+
+  Number(patient.totalML || 0),
+
+  Number(patient.remainingML || 0),
+
+  Number(patient.percentage || 0),
+
+  Number(consumptionRate || 0),
+
+  Number(rateChange || 0),
+
+  Number(timeInterval || 0)
+
+]];
+
+    console.log("🤖 AI Prediction Input:", aiInput);
+
+    // Run prediction
+const prediction =
+  aiModel.predict(aiInput);
+
+let predictedRemainingTime =
+  Number(prediction[0]);
+
+// If IV is empty, remaining time must be zero
+if (Number(patient.remainingML || 0) <= 0) {
+  predictedRemainingTime = 0;
+}
+
+console.log(
+  "🤖 AI Predicted Time:",
+  predictedRemainingTime,
+  "minutes"
+);
+    res.json({
+
+      success: true,
+
+      predictionAvailable: true,
+
+      patientId: patientId,
+
+      remainingML:
+        Number(patient.remainingML || 0),
+
+      percentage:
+        Number(patient.percentage || 0),
+
+      consumptionRate:
+        Number(consumptionRate.toFixed(2)),
+
+      rateChange:
+        Number(rateChange.toFixed(2)),
+
+      predictedRemainingTime:
+        Number(
+          Math.max(
+            0,
+            predictedRemainingTime
+          ).toFixed(2)
+        ),
+
+      unit: "minutes"
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      "❌ AI prediction error:",
+      error
+    );
+
+    res.status(500).json({
+
+      success: false,
+
+      message: "AI prediction error"
+
+    });
+
+  }
+
+});
+
+
 
 
 
@@ -73,8 +440,17 @@ const SECRET_KEY = process.env.SECRET_KEY;
 const DEVICE_SECRET = process.env.DEVICE_SECRET;
 
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.error("❌ MongoDB Error:", err));
+  .then(async () => {
+
+    console.log("✅ MongoDB Connected");
+
+    // Train AI model after MongoDB connection
+    await trainAIModel();
+
+  })
+  .catch(err => {
+    console.error("❌ MongoDB Error:", err);
+  });
 
 
 async function addLog(action, details = {}) {
@@ -240,7 +616,11 @@ const limiter = rateLimit({
   max: 100 // 100 طلب لكل IP
 });
 
-app.use(limiter);
+app.use("/api/login", limiter);
+app.use("/api/send-otp", limiter);
+app.use("/api/verify-otp", limiter);
+app.use("/api/forgot-password", limiter);
+app.use("/api/reset-password", limiter);
 
 
 
@@ -455,17 +835,32 @@ app.post("/api/patients", authenticateToken, async (req, res) => {
       return res.status(400).json({ message: "Bed already occupied" });
     }
 
+
+
+    const standId = req.body.standId?.trim();
+
+if (standId) {
+  const existingStand = await Patient.findOne({
+    standId: standId
+  });
+
+  if (existingStand) {
+    return res.status(400).json({ message: "Stand already assigned to another patient" });
+  }
+}
+
     const newPatient = await Patient.create({
-      name: req.body.name.trim(),
-      patientId: Date.now().toString(),
-      room: bed,
-      fluid: req.body.fluid || "",
-      totalML: Number(req.body.totalML),
-      remainingML: Number(req.body.totalML),
-      percentage: 100,
-      status: "Running",
-      nurse: req.user.username
-    });
+  name: req.body.name.trim(),
+  patientId: Date.now().toString(),
+  room: bed,
+  fluid: req.body.fluid || "",
+  totalML: Number(req.body.totalML),
+  remainingML: Number(req.body.totalML),
+  percentage: 100,
+  status: "Running",
+  nurse: req.user.username,
+  standId: standId || undefined
+});
 
     await addLog("CREATE_PATIENT", {
       performedBy: req.user.username,
@@ -507,8 +902,282 @@ app.get("/api/patients", authenticateToken, async (req, res) => {
   }
 });
 
+// ================= GET PATIENT BY STAND =================
+
+app.get("/api/stand/:standId", async (req, res) => {
+  try {
+    const standId = req.params.standId.trim();
+
+    const patient = await Patient.findOne({
+      standId: standId
+    });
+
+    if (!patient) {
+      return res.status(404).json({
+        message: "No patient assigned to this stand"
+      });
+    }
+
+    res.json({
+      patientId: patient.patientId,
+      name: patient.name,
+      room: patient.room,
+      bed: patient.room,
+      fluid: patient.fluid,
+      totalML: patient.totalML,
+      remainingML: patient.remainingML,
+      percentage: patient.percentage,
+      status: patient.status,
+      standId: patient.standId,
+      nurse: patient.nurse
+      
+    });
+
+  } catch (err) {
+    console.error("Get stand patient error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+});
 
 
+// ================= AI CONSUMPTION RATE =================
+
+app.get("/api/ai/consumption/:patientId", async (req, res) => {
+
+  try {
+
+    const patientId = req.params.patientId;
+
+    // Get latest sensor readings
+    const readings = await SensorReading.find({
+      patientId: patientId
+    })
+      .sort({ timestamp: -1 })
+      .limit(20);
+
+    // Need at least 2 readings
+    if (readings.length < 2) {
+      return res.json({
+        success: true,
+        consumptionRate: 0,
+        message: "Not enough sensor data"
+      });
+    }
+
+    // Reverse so readings are oldest → newest
+    readings.reverse();
+
+    let totalConsumed = 0;
+    let totalTimeMinutes = 0;
+
+    for (let i = 1; i < readings.length; i++) {
+
+      const previous = readings[i - 1];
+      const current = readings[i];
+
+      const weightDifference =
+        previous.weight - current.weight;
+
+      const timeDifference =
+        (current.timestamp - previous.timestamp) / 60000;
+
+      // Ignore invalid values
+      if (
+        weightDifference > 0 &&
+        timeDifference > 0
+      ) {
+
+        totalConsumed += weightDifference;
+        totalTimeMinutes += timeDifference;
+
+      }
+    }
+
+    if (totalTimeMinutes <= 0) {
+      return res.json({
+        success: true,
+        consumptionRate: 0,
+        message: "Unable to calculate consumption rate"
+      });
+    }
+
+    const consumptionRate =
+      totalConsumed / totalTimeMinutes;
+
+    res.json({
+
+      success: true,
+
+      patientId: patientId,
+
+      consumptionRate:
+        Number(consumptionRate.toFixed(2)),
+
+      unit: "ml/min",
+
+      readingsUsed: readings.length,
+
+      totalConsumed:
+        Number(totalConsumed.toFixed(2)),
+
+      totalTimeMinutes:
+        Number(totalTimeMinutes.toFixed(2))
+
+    });
+
+  } catch (err) {
+
+    console.error(
+      "AI consumption rate error:",
+      err
+    );
+
+    res.status(500).json({
+      success: false,
+      message: "AI calculation error"
+    });
+
+  }
+
+});
+
+// ================= GENERATE AI TRAINING DATA =================
+
+app.post("/api/ai/generate-training-data", async (req, res) => {
+
+  try {
+
+    // Remove old training data
+    await AITrainingData.deleteMany({});
+
+    const trainingData = [];
+
+    const bagSizes = [250, 500, 750, 800, 1000];
+
+    // Generate 30 different IV consumption scenarios
+    for (let scenario = 0; scenario < 100; scenario++) {
+
+  const totalML =
+    bagSizes[Math.floor(Math.random() * bagSizes.length)];
+
+      // Different consumption speeds
+      const consumptionRate =
+        1.5 + Math.random() * 3.5;
+
+      let remainingML = totalML;
+
+      let previousRate = consumptionRate;
+
+      let elapsedMinutes = 0;
+
+      while (remainingML > 0) {
+
+        // Simulate sensor interval
+        const timeInterval =
+          0.5 + Math.random() * 1.5;
+
+        // Small sensor noise
+        const noise =
+          (Math.random() - 0.5) * 2;
+
+        const actualRate =
+          Math.max(
+            0.5,
+            consumptionRate + noise
+          );
+
+        const consumed =
+          actualRate * timeInterval;
+
+        remainingML =
+          Math.max(
+            0,
+            remainingML - consumed
+          );
+
+        elapsedMinutes += timeInterval;
+
+        const percentage =
+          (remainingML / totalML) * 100;
+
+        // Rate variation
+        const rateChange =
+          actualRate - previousRate;
+
+        // Time remaining until empty
+        const remainingTimeMinutes =
+          remainingML / actualRate;
+
+        trainingData.push({
+
+  totalML:
+    Number(totalML),
+
+  remainingML:
+    Number(remainingML.toFixed(2)),
+
+          percentage:
+            Number(percentage.toFixed(2)),
+
+          consumptionRate:
+            Number(actualRate.toFixed(2)),
+
+          rateChange:
+            Number(rateChange.toFixed(2)),
+
+          timeInterval:
+            Number(timeInterval.toFixed(2)),
+
+          remainingTimeMinutes:
+            Number(
+              remainingTimeMinutes.toFixed(2)
+            )
+
+        });
+
+        previousRate = actualRate;
+
+      }
+
+    }
+
+    await AITrainingData.insertMany(trainingData);
+
+    res.json({
+
+      success: true,
+
+      message:
+        "AI training dataset generated successfully",
+
+      samples:
+        trainingData.length
+
+    });
+
+  } catch (err) {
+
+    console.error(
+      "AI training data error:",
+      err
+    );
+
+    res.status(500).json({
+
+      success: false,
+
+      message:
+        "Failed to generate AI training data"
+
+    });
+
+  }
+
+});
 
 // ================= UPDATE =================
 app.put("/api/patients/:id", authenticateToken, async (req, res) => {
@@ -525,6 +1194,7 @@ app.put("/api/patients/:id", authenticateToken, async (req, res) => {
     }
 
     const newBed = req.body.bed?.trim();
+    const newStand = req.body.standId?.trim();
 
     // 🔒 فحص السرير إذا تغير
     if (newBed && newBed !== patient.room) {
@@ -539,6 +1209,26 @@ app.put("/api/patients/:id", authenticateToken, async (req, res) => {
 
       patient.room = newBed;
     }
+
+
+    // 🔒 Check Stand if changed
+if (newStand !== patient.standId) {
+
+  if (newStand) {
+    const existingStand = await Patient.findOne({
+      standId: newStand,
+      patientId: { $ne: id }
+    });
+
+    if (existingStand) {
+      return res.status(400).json({
+        message: "Stand already assigned to another patient"
+      });
+    }
+  }
+
+  patient.standId = newStand || undefined;
+}
 
     const oldRemaining = patient.remainingML;
 
@@ -605,6 +1295,166 @@ app.delete("/api/patients/:id", authenticateToken, async (req, res) => {
 });
 
 
+// ================= LOCAL QWEN AI CHAT =================
+
+app.post("/api/ai/chat", async (req, res) => {
+  try {
+    const { question, patient, estimatedTime } = req.body;
+
+    if (!question) {
+      return res.status(400).json({
+        success: false,
+        message: "Question is required"
+      });
+    }
+
+    const patientContext = `
+اسم المريض: ${patient?.name || "غير متوفر"}
+رقم المريض: ${patient?.patientId || "غير متوفر"}
+رقم السرير: ${patient?.bed || patient?.room || "غير متوفر"}
+الممرض المسؤول: ${patient?.nurse || "غير متوفر"}
+نوع المحلول: ${patient?.fluid || "غير متوفر"}
+إجمالي المحلول: ${patient?.totalML || 0} ml
+المتبقي من المحلول: ${patient?.remainingML || 0} ml
+نسبة المحلول: ${patient?.percentage || 0}%
+حالة المحلول: ${patient?.status || "غير متوفرة"}
+`;
+
+    const systemPrompt = `
+أنت Smart IV Assistant داخل المستشفى.
+
+مهمتك مساعدة المريض في معرفة معلومات المحلول والبيانات المرتبطة به.
+
+أجب باللغة العربية وبأسلوب بسيط وطبيعي ومختصر.
+لا تعرض خطوات التفكير.
+لا تذكر أنك نموذج ذكاء اصطناعي.
+لا تخترع أي معلومات.
+
+بيانات المريض الحالية:
+
+اسم المريض: ${patient?.name || "غير متوفر"}
+رقم المريض: ${patient?.patientId || "غير متوفر"}
+رقم السرير: ${patient?.bed || patient?.room || "غير متوفر"}
+الممرض المسؤول: ${patient?.nurse || "غير متوفر"}
+نوع المحلول: ${patient?.fluid || "غير متوفر"}
+إجمالي المحلول: ${patient?.totalML || 0} ml
+المتبقي من المحلول: ${patient?.remainingML || 0} ml
+نسبة المحلول: ${patient?.percentage || 0}%
+حالة المحلول: ${patient?.status || "غير متوفرة"}
+
+الوقت المتوقع لانتهاء المحلول حسب نظام الذكاء الاصطناعي:
+${estimatedTime || "غير متوفر"}
+
+قواعد الإجابة:
+
+1. إذا سأل المريض:
+"كم باقي؟"
+"كم ضايل؟"
+"قديش ضايل؟"
+"كم باقي من المحلول؟"
+فأجبه باستخدام كمية المحلول المتبقية.
+
+2. إذا سأل:
+"كم نسبة المحلول؟"
+"شو النسبة؟"
+فأجبه باستخدام نسبة المحلول.
+
+3. إذا سأل:
+"متى يخلص المحلول؟"
+"متى ينتهي؟"
+"كم ضايل وقت؟"
+"قديش بضل؟"
+"كم باقي من الوقت ويخلص المحلول؟"
+"متى بخلص؟"
+فاستخدم قيمة "الوقت المتوقع لانتهاء المحلول" الموجودة أمامك.
+
+4. إذا سأل عن الممرض أو المسؤول:
+"مين الممرض تبعي؟"
+"مين المسؤول عني؟"
+"مين براجعني؟"
+فاستخدم اسم الممرض المسؤول الموجود في البيانات.
+
+5. إذا سأل:
+"شو اسم المغذي؟"
+"شو المحلول؟"
+"اسم المحلول؟"
+"نوع المحلول؟"
+فاستخدم قيمة "نوع المحلول".
+
+6. إذا سأل عن السرير:
+"شو رقم سريري؟"
+"وين سريري؟"
+"رقم السرير؟"
+فاستخدم رقم السرير.
+
+7. إذا سأل عن اسمه، استخدم اسم المريض.
+
+8. إذا سأل سؤالًا لا يتعلق ببيانات المريض أو المحلول، مثل:
+"ما هي عاصمة مصر؟"
+قل:
+"المعلومة غير متوفرة حاليًا."
+
+9. إذا كانت المعلومة المطلوبة موجودة في البيانات، لا تقل "المعلومة غير متوفرة".
+
+10. لا تقدم تشخيصًا طبيًا.
+إذا أبلغ المريض عن مشكلة أو حالة مقلقة، اطلب منه التواصل مع الممرض المسؤول.
+
+11. لا تذكر معلومات أي مريض آخر.
+
+12. اجعل الإجابة قصيرة، جملة أو جملتين فقط.
+`;
+
+    const response = await fetch("http://localhost:11434/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "qwen3:1.7b",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: question
+          }
+        ],
+        stream: false,
+        think: false,
+        options: {
+          temperature: 0.2,
+          num_predict: 120
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ollama HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    const answer =
+      data?.message?.content ||
+      "عذرًا، لم أتمكن من الإجابة حاليًا.";
+
+    res.json({
+      success: true,
+      answer: answer.trim()
+    });
+
+  } catch (error) {
+    console.error("❌ Qwen AI Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Local AI unavailable"
+    });
+  }
+});
+
 // ================= NEW IV BAG =================
 
 app.post("/api/patients/:id/new-bag", authenticateToken, async (req, res) => {
@@ -656,11 +1506,21 @@ app.post("/api/sensor", async (req, res) => {
 
   try {
     const { patientId, weight } = req.body;
-
+console.log("🧪 SENSOR RAW DATA:", {
+  patientId,
+  weight,
+  weightType: typeof weight
+});
     const patient = await Patient.findOne({
   room: patientId
 });
-
+console.log("🧪 PATIENT BEFORE UPDATE:", {
+  patientId: patient?.patientId,
+  room: patient?.room,
+  totalML: patient?.totalML,
+  remainingML: patient?.remainingML,
+  percentage: patient?.percentage
+});
 
 
     if (!patient) {
@@ -669,6 +1529,12 @@ app.post("/api/sensor", async (req, res) => {
 
     patient.remainingML = Number(weight);
 
+// Save reading for AI analysis
+await SensorReading.create({
+  patientId: patient.patientId,
+  weight: Number(weight),
+  timestamp: new Date()
+});
     patient.percentage = Math.round(
       (patient.remainingML / patient.totalML) * 100
     );
@@ -718,6 +1584,11 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("🔌 Client connected:", socket.id);
 });
+
+
+
+
+
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

@@ -247,7 +247,7 @@ function selectPatient() {
   document.getElementById("bed").value = p.room ?? "";
   document.getElementById("fluid").value = p.fluid ?? "";
   document.getElementById("totalML").value = p.totalML ?? "";
-
+document.getElementById("standId").value = p.standId ?? "";
   document.getElementById("displayFluid").innerText = p.fluid ?? "-";
   document.getElementById("displayRemaining").innerText =
     p.remainingML ?? p.totalML ?? "-";
@@ -277,11 +277,12 @@ async function addPatient() {
       "Authorization": "Bearer " + token
     },
     body: JSON.stringify({
-      name: document.getElementById("name").value,
-      bed: document.getElementById("bed").value,
-      fluid: document.getElementById("fluid").value,
-      totalML: document.getElementById("totalML").value
-    })
+    name: document.getElementById("name").value,
+    bed: document.getElementById("bed").value,
+    fluid: document.getElementById("fluid").value,
+    totalML: document.getElementById("totalML").value,
+    standId: document.getElementById("standId").value
+})
   });
 
   const data = await res.json();
@@ -314,12 +315,13 @@ async function updatePatient() {
       "Content-Type": "application/json",
       "Authorization": "Bearer " + token
     },
-    body: JSON.stringify({
-      name: document.getElementById("name").value,
-      bed: document.getElementById("bed").value,
-      fluid: document.getElementById("fluid").value,
-      totalML: document.getElementById("totalML").value
-    })
+   body: JSON.stringify({
+  name: document.getElementById("name").value,
+  bed: document.getElementById("bed").value,
+  fluid: document.getElementById("fluid").value,
+  totalML: document.getElementById("totalML").value,
+  standId: document.getElementById("standId").value
+})
   });
 
  await loadPatients(true);

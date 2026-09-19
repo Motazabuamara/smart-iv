@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Smart IV - Patient Monitor</title>
+
+  <style>
+   * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #eef7ff, #f8fbff);
+  color: #102a43;
+  min-height: 100vh;
+}
+
+/* ================= HEADER ================= */
+
+header {
+  height: 85px;
+  background: rgba(255, 255, 255, 0.96);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 35px;
+  border-bottom: 1px solid #dce8f3;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.logo span {
+  color: #168cff;
+}
+
+.stand-id {
+  font-size: 18px;
+  font-weight: bold;
+  color: #607d9b;
+}
+
+/* ================= MAIN ================= */
+
+main {
+  width: 100%;
+  max-width: 1200px;
+  margin: 25px auto;
+  padding: 0 25px;
+}
+
+/* ================= PATIENT HEADER ================= */
+
+.patient-header {
+  background: white;
+  border-radius: 20px;
+  padding: 22px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 6px 25px rgba(25, 80, 130, 0.08);
+  margin-bottom: 20px;
+}
+
+.patient-info h1 {
+  font-size: 30px;
+  margin-bottom: 7px;
+}
+
+.patient-info p {
+  color: #718096;
+  font-size: 17px;
+}
+
+.status {
+  padding: 12px 25px;
+  border-radius: 30px;
+  font-size: 17px;
+  font-weight: bold;
+  background: #e8fff4;
+  color: #08a66a;
+}
+
+/* ================= CARDS ================= */
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.card {
+  background: white;
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 6px 25px rgba(25, 80, 130, 0.07);
+}
+
+.card-title {
+  font-size: 17px;
+  color: #718096;
+  margin-bottom: 12px;
+  font-weight: bold;
+}
+
+.big-value {
+  font-size: 34px;
+  font-weight: 800;
+  color: #168cff;
+}
+
+.unit {
+  font-size: 17px;
+  color: #718096;
+}
+
+/* ================= PROGRESS ================= */
+
+.progress-card {
+  grid-column: 1 / 3;
+}
+
+.progress-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 17px;
+  font-weight: bold;
+}
+
+.progress-container {
+  height: 26px;
+  background: #e8edf2;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  border-radius: 20px;
+  transition: width 0.8s ease;
+  background: #12b886;
+}
+
+/* ================= AI ================= */
+
+.ai-card {
+  grid-column: 1 / 3;
+  background: linear-gradient(135deg, #ffffff, #f1f8ff);
+  border: 1px solid #dcecff;
+}
+
+.ai-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.ai-icon {
+  font-size: 27px;
+}
+
+.ai-message {
+  font-size: 18px;
+  font-weight: bold;
+  color: #08a66a;
+}
+
+.last-update {
+  margin-top: 10px;
+  color: #8a9aad;
+  font-size: 13px;
+}
+
+/* ================= WAITING ================= */
+
+.waiting {
+  background: white;
+  border-radius: 22px;
+  padding: 110px 30px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(25, 80, 130, 0.08);
+}
+
+.waiting-icon {
+  font-size: 60px;
+  margin-bottom: 18px;
+}
+
+.waiting h1 {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.waiting p {
+  font-size: 17px;
+  color: #718096;
+}
+
+/* ================= FOOTER ================= */
+
+footer {
+  text-align: center;
+  color: #8a9aad;
+  padding: 15px;
+  font-size: 13px;
+}
+
+/* ================= TABLET ================= */
+
+@media (min-width: 768px) and (max-width: 1300px) {
+
+  header {
+    height: 75px;
+    padding: 0 28px;
+  }
+
+  .logo {
+    font-size: 25px;
+  }
+
+  main {
+    max-width: 1100px;
+    margin: 20px auto;
+    padding: 0 20px;
+  }
+
+  .patient-header {
+    padding: 20px 25px;
+  }
+
+  .patient-info h1 {
+    font-size: 28px;
+  }
+
+  .grid {
+    gap: 16px;
+  }
+
+  .card {
+    padding: 22px;
+  }
+
+  .big-value {
+    font-size: 32px;
+  }
+
+  .progress-container {
+    height: 25px;
+  }
+
+  .ai-message {
+    font-size: 18px;
+  }
+}
+
+/* ================= MOBILE ================= */
+
+@media (max-width: 767px) {
+
+  header {
+    height: 70px;
+    padding: 0 18px;
+  }
+
+  .logo {
+    font-size: 22px;
+  }
+
+  .stand-id {
+    font-size: 14px;
+  }
+
+  main {
+    margin: 15px auto;
+    padding: 0 12px;
+  }
+
+  .patient-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .patient-info h1 {
+    font-size: 24px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-card,
+  .ai-card {
+    grid-column: 1;
+  }
+
+  .big-value {
+    font-size: 30px;
+  }
+}
+
+    /* PROGRESS */
+    .progress-card {
+      grid-column: 1 / 3;
+    }
+
+    .progress-top {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .progress-container {
+      height: 30px;
+      background: #e8edf2;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 20px;
+      transition: width 0.8s ease;
+      background: #12b886;
+    }
+
+    /* AI */
+    .ai-card {
+      grid-column: 1 / 3;
+      background: linear-gradient(135deg, #ffffff, #f1f8ff);
+      border: 1px solid #dcecff;
+    }
+
+    .ai-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    .ai-icon {
+      font-size: 30px;
+    }
+
+    .ai-message {
+      font-size: 20px;
+      font-weight: bold;
+      color: #08a66a;
+    }
+
+    .last-update {
+      margin-top: 15px;
+      color: #8a9aad;
+      font-size: 14px;
+    }
+
+    /* WAITING */
+    .waiting {
+      background: white;
+      border-radius: 25px;
+      padding: 100px 30px;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(25, 80, 130, 0.08);
+    }
+
+    .waiting-icon {
+      font-size: 65px;
+      margin-bottom: 20px;
+    }
+
+    .waiting h1 {
+      font-size: 35px;
+      margin-bottom: 12px;
+    }
+
+    .waiting p {
+      font-size: 18px;
+      color: #718096;
+    }
+
+    footer {
+      text-align: center;
+      color: #8a9aad;
+      padding: 30px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 800px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .progress-card,
+      .ai-card {
+        grid-column: 1;
+      }
+
+      .patient-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+      }
+    }
+
+
+
+    /* ================= PATIENT AI CHAT ================= */
+
+.chat-card {
+  grid-column: 1 / 3;
+  margin-top: 18px;
+  background: white;
+  border: 1px solid #dcecff;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.chat-icon {
+  font-size: 32px;
+}
+
+.chat-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #102a43;
+}
+
+.chat-subtitle {
+  font-size: 14px;
+  color: #8a9aad;
+  margin-top: 3px;
+}
+
+.chat-messages {
+  height: 260px;
+  overflow-y: auto;
+  padding: 10px;
+  background: #f7fbff;
+  border-radius: 15px;
+  margin-bottom: 15px;
+}
+
+.chat-message {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.chat-message.user {
+  justify-content: flex-end;
+}
+
+.message-avatar {
+  font-size: 25px;
+  flex-shrink: 0;
+}
+
+.message-bubble {
+  max-width: 75%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: white;
+  color: #102a43;
+  box-shadow: 0 2px 8px rgba(25, 80, 130, 0.08);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.chat-message.user .message-bubble {
+  background: #168cff;
+  color: white;
+}
+
+.chat-input-area {
+  display: flex;
+  gap: 10px;
+}
+
+#chatInput {
+  flex: 1;
+  height: 52px;
+  border: 1px solid #d7e4ef;
+  border-radius: 14px;
+  padding: 0 16px;
+  font-size: 16px;
+  outline: none;
+}
+
+#chatInput:focus {
+  border-color: #168cff;
+}
+
+#chatSendButton {
+  height: 52px;
+  padding: 0 25px;
+  border: none;
+  border-radius: 14px;
+  background: #168cff;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#chatSendButton:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 767px) {
+
+  .chat-card {
+    grid-column: 1;
+  }
+
+  .chat-messages {
+    height: 230px;
+  }
+
+  .message-bubble {
+    max-width: 85%;
+  }
+
+  .chat-input-area {
+    flex-direction: column;
+  }
+
+  #chatSendButton {
+    width: 100%;
+  }
+}
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="logo">
+      💧 Smart <span>IV</span>
+    </div>
+
+    <div class="stand-id" id="standDisplay">
+      STAND-01
+    </div>
+  </header>
+
+
+  <main>
+
+    <!-- WAITING SCREEN -->
+    <div id="waitingScreen" class="waiting">
+
+      <div class="waiting-icon">🏥</div>
+
+      <h1>Waiting for Patient</h1>
+
+      <p>
+        This IV stand is currently waiting for a patient assignment.
+      </p>
+
+    </div>
+
+
+    <!-- PATIENT SCREEN -->
+    <div id="patientScreen" style="display:none;">
+
+      <div class="patient-header">
+
+        <div class="patient-info">
+
+          <h1 id="patientName">
+            Patient
+          </h1>
+
+          <p>
+            🛏️ Bed:
+            <strong id="patientBed">-</strong>
+            &nbsp;&nbsp; | &nbsp;&nbsp;
+            🆔 Patient ID:
+            <strong id="patientId">-</strong>
+          </p>
+
+        </div>
+
+        <div id="status" class="status">
+          Running
+        </div>
+
+      </div>
+
+
+      <div class="grid">
+
+        <!-- IV FLUID -->
+        <div class="card">
+
+          <div class="card-title">
+            💧 IV Fluid
+          </div>
+
+          <div>
+            <span id="fluid" class="big-value">
+              -
+            </span>
+          </div>
+
+        </div>
+
+
+        <!-- REMAINING -->
+        <div class="card">
+
+          <div class="card-title">
+            🧪 Remaining
+          </div>
+
+          <div>
+            <span id="remaining" class="big-value">
+              -
+            </span>
+
+            <span class="unit">
+              ml
+            </span>
+          </div>
+
+        </div>
+
+
+        <!-- PERCENTAGE -->
+        <div class="card">
+
+          <div class="card-title">
+            📊 IV Level
+          </div>
+
+          <div>
+            <span id="percentage" class="big-value">
+              -
+            </span>
+
+            <span class="unit">
+              %
+            </span>
+          </div>
+
+        </div>
+
+
+        <!-- TOTAL -->
+        <div class="card">
+
+          <div class="card-title">
+            📦 Total IV
+          </div>
+
+          <div>
+            <span id="totalML" class="big-value">
+              -
+            </span>
+
+            <span class="unit">
+              ml
+            </span>
+          </div>
+
+        </div>
+
+
+        <!-- PROGRESS -->
+        <div class="card progress-card">
+
+          <div class="progress-top">
+
+            <span>
+              IV Fluid Level
+            </span>
+
+            <span id="progressText">
+              0%
+            </span>
+
+          </div>
+
+          <div class="progress-container">
+
+            <div
+              id="progressBar"
+              class="progress-bar">
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- AI -->
+        <div class="card ai-card">
+
+          <div class="ai-header">
+
+            <span class="ai-icon">
+              🤖
+            </span>
+
+            AI Monitoring
+
+          </div>
+
+          <div
+  id="aiMessage"
+  class="ai-message">
+
+  🟢 IV Flow Normal
+
+</div>
+
+<div
+  id="aiPrediction"
+  style="
+    margin-top: 14px;
+    font-size: 24px;
+    font-weight: 800;
+    color: #168cff;
+  ">
+
+  🤖 Estimated Time: Calculating...
+
+</div>
+
+          <div
+            id="lastUpdate"
+            class="last-update">
+
+            Last update: -
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+    <!-- ================= PATIENT AI CHAT ================= -->
+
+<div class="card chat-card">
+
+  <div class="chat-header">
+    <span class="chat-icon">🤖</span>
+
+    <div>
+      <div class="chat-title">
+        Smart IV Assistant
+      </div>
+
+      <div class="chat-subtitle">
+        Patient Assistance
+      </div>
+    </div>
+  </div>
+
+
+  <div id="chatMessages" class="chat-messages">
+
+    <div class="chat-message ai">
+      <div class="message-avatar">🤖</div>
+
+      <div class="message-bubble">
+        مرحباً 👋 أنا Smart IV Assistant.
+        <br>
+        يمكنك سؤالي عن المحلول أو الممرض المسؤول عنك.
+      </div>
+    </div>
+
+  </div>
+
+
+  <div class="chat-input-area">
+
+    <input
+      type="text"
+      id="chatInput"
+      placeholder="اكتب سؤالك هنا..."
+      autocomplete="off"
+    >
+
+    <button id="chatSendButton">
+      إرسال
+    </button>
+
+  </div>
+
+</div>
+
+  </main>
+
+
+  <footer>
+    AI-Powered Intelligent IV Monitoring and Patient Care Platform
+  </footer>
+
+
+<script>
+
+  // Get Stand ID from URL
+  const params = new URLSearchParams(window.location.search);
+
+  const standId =
+    params.get("stand") || "STAND-01";
+
+  document.getElementById("standDisplay").innerText =
+    standId;
+
+
+  // Load patient data
+  async function loadStandPatient() {
+
+    try {
+
+      const response = await fetch(
+  "/api/stand/" + encodeURIComponent(standId),
+  {
+    cache: "no-store"
+  }
+);
+// No patient assigned
+if (response.status === 404) {
+
+  document.getElementById("waitingScreen").style.display =
+    "block";
+
+  document.getElementById("patientScreen").style.display =
+    "none";
+
+  return;
+}
+
+// Server temporarily unavailable / error
+if (!response.ok) {
+
+  console.warn(
+    "Stand server response:",
+    response.status
+  );
+
+  const patientScreen =
+    document.getElementById("patientScreen");
+
+  if (patientScreen.style.display !== "none") {
+
+    document.getElementById("aiMessage").innerText =
+      "🟡 Connection Lost — Reconnecting...";
+
+    document.getElementById("lastUpdate").innerText =
+      "Waiting for connection...";
+
+  }
+
+  return;
+}
+
+      const patient = await response.json();
+
+currentPatient = patient;
+
+
+      // Hide waiting
+      document.getElementById("waitingScreen").style.display =
+        "none";
+
+      document.getElementById("patientScreen").style.display =
+        "block";
+
+
+      // Patient data
+      document.getElementById("patientName").innerText =
+        patient.name || "-";
+
+      document.getElementById("patientBed").innerText =
+        patient.bed || patient.room || "-";
+
+      document.getElementById("patientId").innerText =
+        patient.patientId || "-";
+
+      document.getElementById("fluid").innerText =
+        patient.fluid || "-";
+
+      document.getElementById("remaining").innerText =
+        Number(patient.remainingML || 0).toFixed(2);
+
+      document.getElementById("percentage").innerText =
+        Math.round(patient.percentage || 0);
+
+      document.getElementById("totalML").innerText =
+        patient.totalML || "-";
+
+      document.getElementById("status").innerText =
+        patient.status || "Unknown";
+
+
+      // Progress
+      const percentage =
+        Math.max(
+          0,
+          Math.min(
+            100,
+            Number(patient.percentage || 0)
+          )
+        );
+
+      document.getElementById("progressBar").style.width =
+        percentage + "%";
+
+      document.getElementById("progressText").innerText =
+        Math.round(percentage) + "%";
+
+
+      // AI monitoring
+updateAI(percentage);
+
+// AI prediction
+await updateAIPrediction(patient.patientId);
+
+      // Last update
+      const now = new Date();
+
+      document.getElementById("lastUpdate").innerText =
+        "Last update: " + now.toLocaleTimeString();
+
+    }
+
+    
+
+catch (error) {
+
+  console.error(
+    "Stand connection error:",
+    error
+  );
+
+  // Keep the patient data on screen
+  const patientScreen =
+    document.getElementById("patientScreen");
+
+  if (patientScreen.style.display !== "none") {
+
+    document.getElementById("aiMessage").innerText =
+      "🟡 Connection Lost — Reconnecting...";
+
+    document.getElementById("lastUpdate").innerText =
+      "Waiting for connection...";
+
+  }
+
+}
+
+  }
+
+
+  // AI monitoring
+  function updateAI(percentage) {
+
+    const aiMessage =
+      document.getElementById("aiMessage");
+
+    const progressBar =
+      document.getElementById("progressBar");
+
+
+    if (percentage <= 5) {
+
+      aiMessage.innerText =
+        "🚨 Critical: IV Fluid Almost Empty";
+
+      progressBar.style.background =
+        "#e03131";
+
+    }
+
+    else if (percentage <= 10) {
+
+      aiMessage.innerText =
+        "⚠️ Critical IV Level";
+
+      progressBar.style.background =
+        "#ff922b";
+
+    }
+
+    else if (percentage <= 20) {
+
+      aiMessage.innerText =
+        "⚠️ Low IV Level - Nurse Attention Recommended";
+
+      progressBar.style.background =
+        "#ffd43b";
+
+    }
+
+    else {
+
+      aiMessage.innerText =
+        "🟢 IV Flow Normal";
+
+      progressBar.style.background =
+        "#12b886";
+
+    }
+
+  }
+
+
+
+
+// ================= AI PREDICTION =================
+
+async function updateAIPrediction(patientId) {
+
+  const predictionElement =
+    document.getElementById("aiPrediction");
+
+  if (!patientId) {
+
+    predictionElement.innerText =
+      "🤖 Estimated Time: Unavailable";
+
+    return;
+  }
+
+  try {
+
+    const response = await fetch(
+      "/api/ai/predict/" +
+      encodeURIComponent(patientId),
+      {
+        cache: "no-store"
+      }
+    );
+
+    if (!response.ok) {
+
+      predictionElement.innerText =
+        "🤖 Estimated Time: Unavailable";
+
+      return;
+    }
+
+    const data = await response.json();
+
+    if (
+      !data.success ||
+      !data.predictionAvailable
+    ) {
+
+      predictionElement.innerText =
+        "🤖 Estimated Time: Waiting for sensor data...";
+
+      return;
+    }
+
+    const minutes =
+      Number(data.predictedRemainingTime || 0);
+
+    if (minutes <= 0) {
+
+      predictionElement.innerText =
+        "🤖 Estimated Time: IV Finished";
+
+      return;
+    }
+
+    const hours =
+      Math.floor(minutes / 60);
+
+    const mins =
+      Math.round(minutes % 60);
+
+    let timeText = "";
+
+    if (hours > 0) {
+
+      timeText =
+        `${hours}h ${mins}m`;
+
+    } else {
+
+      timeText =
+        `${mins} min`;
+
+    }
+
+    predictionElement.innerText =
+      "🤖 Estimated Remaining Time: " +
+      timeText;
+
+  } catch (error) {
+
+    console.error(
+      "AI prediction error:",
+      error
+    );
+
+    predictionElement.innerText =
+      "🤖 Estimated Time: Reconnecting...";
+
+  }
+
+}
+
+  // First load
+  loadStandPatient();
+
+
+  // Automatic update every 15 seconds
+  setInterval(
+    loadStandPatient,
+    15000
+  );
+
+
+  // ================= PATIENT AI CHAT =================
+
+let currentPatient = null;
+
+
+// Add message to chat
+function addChatMessage(message, sender) {
+
+  const chatMessages =
+    document.getElementById("chatMessages");
+
+  const messageDiv =
+    document.createElement("div");
+
+  messageDiv.className =
+    "chat-message " + sender;
+
+
+  if (sender === "ai") {
+
+    messageDiv.innerHTML = `
+      <div class="message-avatar">🤖</div>
+
+      <div class="message-bubble">
+        ${message}
+      </div>
+    `;
+
+  } else {
+
+    messageDiv.innerHTML = `
+      <div class="message-bubble">
+        ${message}
+      </div>
+    `;
+  }
+
+
+  chatMessages.appendChild(messageDiv);
+
+  chatMessages.scrollTop =
+    chatMessages.scrollHeight;
+}
+
+
+// Generate local Smart IV response
+function getPatientAIResponse(question) {
+
+  const q =
+    question.toLowerCase().trim();
+
+
+  if (!currentPatient) {
+
+    return "⚠️ لا توجد بيانات مريض متاحة حالياً.";
+  }
+
+
+  // Nurse question
+  if (
+    q.includes("ممرض") ||
+    q.includes("الممرض") ||
+    q.includes("nurse")
+  ) {
+
+    return `
+      👨‍⚕️ الممرض المسؤول عن متابعتك هو:
+      <strong>${currentPatient.nurse || "غير متوفر حالياً"}</strong>
+    `;
+  }
+
+
+  // Remaining fluid
+  if (
+    q.includes("باقي") ||
+    q.includes("متبقي") ||
+    q.includes("remaining")
+  ) {
+
+    return `
+      💧 المتبقي من المحلول:
+      <strong>${Number(currentPatient.remainingML || 0).toFixed(2)} ml</strong>
+    `;
+  }
+
+
+  // Percentage
+  if (
+    q.includes("نسبة") ||
+    q.includes("percentage") ||
+    q.includes("%")
+  ) {
+
+    return `
+      📊 نسبة المحلول المتبقية:
+      <strong>${Math.round(currentPatient.percentage || 0)}%</strong>
+    `;
+  }
+
+
+  // Bed
+  if (
+    q.includes("سرير") ||
+    q.includes("تخت") ||
+    q.includes("bed")
+  ) {
+
+    return `
+      🛏️ رقم سريرك هو:
+      <strong>${currentPatient.bed || currentPatient.room || "-"}</strong>
+    `;
+  }
+
+
+  // IV fluid
+  if (
+    q.includes("نوع المحلول") ||
+    q.includes("المحلول") ||
+    q.includes("fluid")
+  ) {
+
+    return `
+      💧 المحلول المستخدم حالياً:
+      <strong>${currentPatient.fluid || "غير متوفر"}</strong>
+    `;
+  }
+
+
+  // Status
+  if (
+    q.includes("حالة") ||
+    q.includes("طبيعي") ||
+    q.includes("status")
+  ) {
+
+    return `
+      🩺 حالة المحلول حالياً:
+      <strong>${currentPatient.status || "غير معروف"}</strong>
+    `;
+  }
+
+
+  // Patient name
+  if (
+    q.includes("اسمي") ||
+    q.includes("my name")
+  ) {
+
+    return `
+      👤 اسم المريض المسجل هو:
+      <strong>${currentPatient.name || "-"}</strong>
+    `;
+  }
+
+
+  // Estimated time
+  if (
+    q.includes("متى") ||
+    q.includes("يخلص") ||
+    q.includes("ينتهي") ||
+    q.includes("وقت")
+  ) {
+
+    const prediction =
+      document
+        .getElementById("aiPrediction")
+        .innerText;
+
+    return `
+      ⏱️ ${prediction.replace("🤖 ", "")}
+    `;
+  }
+
+
+  return `
+    🤖 أستطيع مساعدتك في معرفة:
+    <br><br>
+    • اسم الممرض المسؤول عنك 👨‍⚕️
+    <br>
+    • كمية المحلول المتبقية 💧
+    <br>
+    • نسبة المحلول 📊
+    <br>
+    • رقم السرير 🛏️
+    <br>
+    • حالة المحلول 🩺
+    <br>
+    • الوقت المتوقع لانتهاء المحلول ⏱️
+  `;
+}
+
+
+// Send chat message
+// ================= SEND CHAT MESSAGE TO LOCAL QWEN =================
+
+async function sendChatMessage() {
+
+  const input = document.getElementById("chatInput");
+  const question = input.value.trim();
+
+  if (!question) {
+    return;
+  }
+
+  // Show user's message
+  addChatMessage(question, "user");
+
+  input.value = "";
+
+  // Temporary message
+  addChatMessage("🤖 جاري التفكير...", "ai");
+
+  try {
+
+    const response = await fetch("/api/ai/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+  question: question,
+  patient: currentPatient,
+  estimatedTime: document.getElementById("aiPrediction")?.innerText || ""
+})
+    });
+
+    const data = await response.json();
+
+    // Remove temporary message
+    const messages = document.getElementById("chatMessages");
+    const lastMessage = messages.lastElementChild;
+
+    if (
+      lastMessage &&
+      lastMessage.classList.contains("ai")
+    ) {
+      lastMessage.remove();
+    }
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "AI error");
+    }
+
+    // Show AI response
+    addChatMessage(data.answer, "ai");
+
+  } catch (error) {
+
+    console.error("❌ Chat AI Error:", error);
+
+    const messages = document.getElementById("chatMessages");
+    const lastMessage = messages.lastElementChild;
+
+    if (
+      lastMessage &&
+      lastMessage.classList.contains("ai")
+    ) {
+      lastMessage.remove();
+    }
+
+    addChatMessage(
+      "⚠️ عذرًا، المساعد غير متاح حاليًا. حاول مرة أخرى.",
+      "ai"
+    );
+  }
+}
+// Send button
+document
+  .getElementById("chatSendButton")
+  .addEventListener(
+    "click",
+    sendChatMessage
+  );
+
+
+// Enter key
+document
+  .getElementById("chatInput")
+  .addEventListener(
+    "keydown",
+    function(event) {
+
+      if (event.key === "Enter") {
+
+        sendChatMessage();
+
+      }
+
+    }
+  );
+
+</script>
+
+
+
+
+
+</body>
+</html>

@@ -12,9 +12,9 @@ const bcrypt = require("bcrypt");
 const path = require("path");
 const dns = require("dns");
 const OpenAI = require("openai");
-const ollama = new OpenAI({
-  baseURL: "http://localhost:11434/v1",
-  apiKey: "ollama"
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 dns.setServers([
@@ -1295,11 +1295,20 @@ app.delete("/api/patients/:id", authenticateToken, async (req, res) => {
 });
 
 
-// ================= LOCAL QWEN AI CHAT =================
+
+
+
+// ================= OPENAI AI CHAT =================
 
 app.post("/api/ai/chat", async (req, res) => {
+
   try {
-    const { question, patient, estimatedTime } = req.body;
+
+    const {
+      question,
+      patient,
+      estimatedTime
+    } = req.body;
 
     if (!question) {
       return res.status(400).json({
@@ -1307,18 +1316,6 @@ app.post("/api/ai/chat", async (req, res) => {
         message: "Question is required"
       });
     }
-
-    const patientContext = `
-اسم المريض: ${patient?.name || "غير متوفر"}
-رقم المريض: ${patient?.patientId || "غير متوفر"}
-رقم السرير: ${patient?.bed || patient?.room || "غير متوفر"}
-الممرض المسؤول: ${patient?.nurse || "غير متوفر"}
-نوع المحلول: ${patient?.fluid || "غير متوفر"}
-إجمالي المحلول: ${patient?.totalML || 0} ml
-المتبقي من المحلول: ${patient?.remainingML || 0} ml
-نسبة المحلول: ${patient?.percentage || 0}%
-حالة المحلول: ${patient?.status || "غير متوفرة"}
-`;
 
     const systemPrompt = `
 أنت Smart IV Assistant داخل المستشفى.
@@ -1342,117 +1339,90 @@ app.post("/api/ai/chat", async (req, res) => {
 نسبة المحلول: ${patient?.percentage || 0}%
 حالة المحلول: ${patient?.status || "غير متوفرة"}
 
-الوقت المتوقع لانتهاء المحلول حسب نظام الذكاء الاصطناعي:
+الوقت المتوقع لانتهاء المحلول حسب نظام Smart IV:
 ${estimatedTime || "غير متوفر"}
 
 قواعد الإجابة:
 
-1. إذا سأل المريض:
-"كم باقي؟"
-"كم ضايل؟"
-"قديش ضايل؟"
-"كم باقي من المحلول؟"
-فأجبه باستخدام كمية المحلول المتبقية.
+1. إذا سأل المريض عن كمية المحلول المتبقية، استخدم قيمة المتبقي من المحلول.
 
-2. إذا سأل:
-"كم نسبة المحلول؟"
-"شو النسبة؟"
-فأجبه باستخدام نسبة المحلول.
+2. إذا سأل عن نسبة المحلول، استخدم نسبة المحلول الحالية.
 
-3. إذا سأل:
-"متى يخلص المحلول؟"
-"متى ينتهي؟"
-"كم ضايل وقت؟"
-"قديش بضل؟"
-"كم باقي من الوقت ويخلص المحلول؟"
-"متى بخلص؟"
-فاستخدم قيمة "الوقت المتوقع لانتهاء المحلول" الموجودة أمامك.
+3. إذا سأل متى ينتهي المحلول أو كم بقي من الوقت،
+استخدم الوقت المتوقع لانتهاء المحلول الموجود في البيانات.
 
-4. إذا سأل عن الممرض أو المسؤول:
-"مين الممرض تبعي؟"
-"مين المسؤول عني؟"
-"مين براجعني؟"
-فاستخدم اسم الممرض المسؤول الموجود في البيانات.
+4. إذا سأل عن الممرض أو المسؤول عنه،
+استخدم اسم الممرض المسؤول الموجود في البيانات.
 
-5. إذا سأل:
-"شو اسم المغذي؟"
-"شو المحلول؟"
-"اسم المحلول؟"
-"نوع المحلول؟"
-فاستخدم قيمة "نوع المحلول".
+5. إذا سأل عن اسم أو نوع المحلول،
+استخدم نوع المحلول الموجود في البيانات.
 
-6. إذا سأل عن السرير:
-"شو رقم سريري؟"
-"وين سريري؟"
-"رقم السرير؟"
-فاستخدم رقم السرير.
+6. إذا سأل عن رقم السرير،
+استخدم رقم السرير الموجود في البيانات.
 
-7. إذا سأل عن اسمه، استخدم اسم المريض.
+7. إذا سأل عن اسمه،
+استخدم اسم المريض الموجود في البيانات.
 
-8. إذا سأل سؤالًا لا يتعلق ببيانات المريض أو المحلول، مثل:
-"ما هي عاصمة مصر؟"
+8. إذا كان السؤال لا يتعلق ببيانات المريض أو المحلول،
 قل:
 "المعلومة غير متوفرة حاليًا."
 
-9. إذا كانت المعلومة المطلوبة موجودة في البيانات، لا تقل "المعلومة غير متوفرة".
+9. لا تخترع أي بيانات.
 
 10. لا تقدم تشخيصًا طبيًا.
-إذا أبلغ المريض عن مشكلة أو حالة مقلقة، اطلب منه التواصل مع الممرض المسؤول.
+إذا أبلغ المريض عن مشكلة أو حالة مقلقة،
+اطلب منه التواصل مع الممرض المسؤول.
 
 11. لا تذكر معلومات أي مريض آخر.
 
 12. اجعل الإجابة قصيرة، جملة أو جملتين فقط.
 `;
 
-    const response = await fetch("http://localhost:11434/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
+    const response = await openai.responses.create({
+
+      model: "gpt-5-mini",
+
+      instructions: systemPrompt,
+
+      input: question,
+
+      reasoning: {
+        effort: "low"
       },
-      body: JSON.stringify({
-        model: "qwen3:1.7b",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          {
-            role: "user",
-            content: question
-          }
-        ],
-        stream: false,
-        think: false,
-        options: {
-          temperature: 0.2,
-          num_predict: 120
-        }
-      })
+
+      max_output_tokens: 500
+
     });
 
-    if (!response.ok) {
-      throw new Error(`Ollama HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-
     const answer =
-      data?.message?.content ||
+      response.output_text ||
       "عذرًا، لم أتمكن من الإجابة حاليًا.";
 
-    res.json({
+    console.log("🤖 AI ANSWER:", answer);
+
+    // مهم جدًا: نرسل Response مرة واحدة فقط
+    return res.json({
       success: true,
       answer: answer.trim()
     });
 
   } catch (error) {
-    console.error("❌ Qwen AI Error:", error);
 
-    res.status(500).json({
+    console.error("❌ OpenAI AI Error:", error);
+
+    // لا تحاول إرسال Response ثاني
+    // إذا كان السيرفر أرسل Response بالفعل
+    if (res.headersSent) {
+      return;
+    }
+
+    return res.status(500).json({
       success: false,
-      message: "Local AI unavailable"
+      message: "OpenAI AI unavailable"
     });
+
   }
+
 });
 
 // ================= NEW IV BAG =================

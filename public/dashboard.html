@@ -1,207 +1,3205 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart IV Dashboard</title>
+
   <link rel="stylesheet" href="style.css">
-
-  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
 
+  <style>
+    /* =========================
+       HEADER CHAT BUTTONS
+       ========================= */
 
-<div class="top-header">
-  <div class="logo">
-    💧 Smart <span>IV</span> Dashboard
-  </div>
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-  <div class="header-right">
-    <div class="nurse-box">
-      Nurse: <strong id="nurseName"></strong>
-    </div>
+    .header-tools {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
 
-    <button id="logoutBtn">Logout</button>
-  </div>
-</div>
+    .header-tool-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 9px 15px;
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s ease;
+      min-width: 150px;
+      text-align: left;
+    }
 
+    .header-tool-btn:hover {
+      transform: translateY(-1px);
+      opacity: 0.92;
+    }
 
-<body>
+    .ai-chat-btn {
+      background: linear-gradient(135deg, #7c3aed, #5b21b6);
+    }
 
-<audio id="alarmSound" preload="auto">
-  <source src="alarm.mp3" type="audio/mpeg">
-</audio>
+    .patient-chat-btn {
+      background: linear-gradient(135deg, #168cff, #0969da);
+    }
 
-<div class="dashboard">
+    .nurse-call-btn {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+    }
 
-  <!-- LEFT PANEL -->
-  <div class="left-panel">
+    .header-tool-btn.active {
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.35);
+    }
 
-    <h2>Patient Management</h2>
-    
+    /* =========================
+       SPECIAL VIEWS
+       ========================= */
 
-    <select id="patients"></select>
+    .special-view {
+      width: 100%;
+      height: 100%;
+    }
 
-    <input id="name" placeholder="Patient Name">
-<input id="bed" placeholder="Bed Number">
-<input id="fluid" placeholder="IV Fluid">
-<input id="totalML" placeholder="Total ML">
-<input id="standId" placeholder="Stand ID (e.g. STAND-01)">
+    .special-view-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 22px;
+    }
 
-   <button id="addBtn" class="btn green">
-  <i class="fa-solid fa-plus icon"></i> Add
-</button>
+    .special-view-header h2 {
+      margin: 0;
+    }
 
-<button  id="newBagBtn" class="btn blue">
-  <i class="fa-solid fa-droplet icon"></i> New Bag
-</button>
+    .close-view-btn {
+      border: none;
+      background: #e5e7eb;
+      color: #374151;
+      border-radius: 10px;
+      padding: 9px 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
 
-<button id="updateBtn" class="btn orange">
-  <i class="fa-solid fa-rotate icon"></i> Update
-</button>
+    .close-view-btn:hover {
+      background: #d1d5db;
+    }
 
-<button id="deleteBtn" class="btn red">
-  <i class="fa-solid fa-trash icon"></i> Delete
-</button>
+    /* =========================
+       AI CHAT
+       ========================= */
 
-  </div>
+    .ai-chat-container {
+      background: white;
+      border-radius: 18px;
+      padding: 20px;
+      height: calc(100% - 70px);
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+    }
 
-  <!-- RIGHT PANEL -->
-  <div class="right-panel">
+    .ai-chat-info {
+      background: #f3e8ff;
+      border: 1px solid #ddd6fe;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 15px;
+      color: #5b21b6;
+      font-weight: 600;
+    }
 
-    <h2>IV Live Monitoring</h2>
-
-    <div id="statusBanner" class="statusBanner">
-      IV Running Normally
-    </div>
-
-   
-
-    <div class="info-grid">
-      <div class="info-card">
-        <h4>IV Fluid</h4>
-        <p id="displayFluid">-</p>
-      </div>
-
-      <div class="info-card">
-        <h4>Remaining</h4>
-        <p><span id="displayRemaining">-</span> ml</p>
-      </div>
-
-      <div class="info-card">
-        <h4>Percentage</h4>
-        <p><span id="displayPercentage">-</span> %</p>
-      </div>
-
-      <div class="info-card">
-        <h4>Status</h4>
-        <p id="displayStatus">-</p>
-      </div>
-    </div>
-
-   <div class="progress-section">
-  <h3>Progress Bar</h3>
-  <div class="progress-container">
-    <div id="progressBar" class="progress-bar"></div>
-  </div>
-</div>
-    
-
-  </div>
-
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="script.js"></script>
-
-<script>
-const socket = io();
-let lastAlertLevel = 100;
-
-function unlockAudio() {
-  const alarm = document.getElementById("alarmSound");
-  alarm.play().then(() => {
-    alarm.pause();
-    alarm.currentTime = 0;
-  }).catch(() => {});
-  document.removeEventListener("click", unlockAudio);
-  document.removeEventListener("keydown", unlockAudio);
-  document.removeEventListener("touchstart", unlockAudio);
+    .ai-chat-messages {
+    height: 520px;
+    max-height: 520px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 10px 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
 }
-document.addEventListener("click", unlockAudio);
-document.addEventListener("keydown", unlockAudio);
-document.addEventListener("touchstart", unlockAudio);
 
-socket.on("patientUpdated", (data) => {
+    .nurse-chat-message {
+      max-width: 78%;
+      padding: 12px 16px;
+      border-radius: 15px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
 
-  const selectedId = document.getElementById("patients").value;
-  if (selectedId === data.patientId) {
+    .nurse-chat-message.ai {
+      align-self: flex-start;
+      background: #f3f4f6;
+      color: #111827;
+    }
 
-    document.getElementById("displayRemaining").innerText = data.remainingML;
-    document.getElementById("displayPercentage").innerText = data.percentage;
-    document.getElementById("displayStatus").innerText = data.status;
+    .nurse-chat-message.user {
+      align-self: flex-end;
+      background: #168cff;
+      color: white;
+    }
 
-    document.getElementById("progressBar").style.width = data.percentage + "%";
-const progressBar = document.getElementById("progressBar");
+    .nurse-chat-message.system {
+      align-self: center;
+      background: #eef2ff;
+      color: #4f46e5;
+      font-size: 13px;
+      text-align: center;
+    }
 
-if (data.percentage > 50) {
-  progressBar.style.background = "linear-gradient(to right, #10b981, #059669)";
+    .ai-chat-input-area {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .ai-chat-input-area input {
+      flex: 1;
+      height: 48px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 0 15px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .ai-chat-input-area input:focus {
+      border-color: #7c3aed;
+    }
+
+    .ai-send-btn {
+      border: none;
+      background: #7c3aed;
+      color: white;
+      border-radius: 12px;
+      padding: 0 22px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .ai-send-btn:disabled,
+    .patient-send-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* =========================
+       PATIENT CHAT
+       ========================= */
+
+    .patient-chat-container {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 15px;
+      height: calc(100% - 70px);
+      min-height: 420px;
+    }
+
+    .patient-list {
+      background: white;
+      border-radius: 16px;
+      padding: 15px;
+      overflow-y: auto;
+    }
+
+    .patient-list-title {
+      font-weight: 800;
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
+
+    .patient-chat-item {
+      padding: 13px;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      background: #f3f4f6;
+      transition: 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .patient-chat-item:hover {
+      background: #e5e7eb;
+    }
+
+    .patient-chat-item.active {
+      background: #dbeafe;
+      border-color: #93c5fd;
+    }
+
+    .patient-chat-item-name {
+      font-weight: 700;
+    }
+
+    .patient-chat-item-bed {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .patient-chat-main {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .patient-chat-header {
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 15px;
+    }
+
+    .patient-chat-header strong {
+      font-size: 19px;
+    }
+
+    .patient-chat-header span {
+      display: block;
+      color: #6b7280;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .patient-chat-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chat-action-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 9px 12px;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chat-call-btn {
+      background: #dc2626;
+    }
+
+    .chat-refresh-btn {
+      background: #64748b;
+    }
+
+    .patient-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      min-height: 250px;
+    }
+
+    .patient-empty {
+      margin: auto;
+      color: #9ca3af;
+      text-align: center;
+      font-size: 15px;
+    }
+
+    .patient-chat-message {
+      max-width: 76%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .patient-chat-message.nurse {
+      align-self: flex-end;
+      background: #168cff;
+      color: white;
+      border-bottom-right-radius: 5px;
+    }
+
+    .patient-chat-message.patient {
+      align-self: flex-start;
+      background: #eef2f7;
+      color: #111827;
+      border-bottom-left-radius: 5px;
+    }
+
+    .patient-chat-message.system {
+      align-self: center;
+      background: #f1f5f9;
+      color: #64748b;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .message-sender {
+      font-size: 11px;
+      font-weight: 800;
+      opacity: 0.8;
+      margin-bottom: 3px;
+    }
+
+    .message-text {
+      font-size: 14px;
+    }
+
+    .patient-chat-input {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .patient-chat-input input {
+      flex: 1;
+      height: 48px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 0 15px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .patient-chat-input input:focus {
+      border-color: #168cff;
+    }
+
+    .patient-send-btn {
+      border: none;
+      background: #168cff;
+      color: white;
+      border-radius: 12px;
+      padding: 0 22px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chat-status {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 6px;
+    }
+
+    /* =========================
+       CALL ALERT
+       ========================= */
+
+    .call-alert {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      width: min(380px, calc(100vw - 44px));
+      background: white;
+      border: 2px solid #ef4444;
+      border-radius: 18px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.2);
+      padding: 18px;
+      z-index: 9999;
+      display: none;
+      animation: callPulse 1.2s infinite alternate;
+    }
+
+    .call-alert.show {
+      display: block;
+    }
+
+    .call-alert-title {
+      color: #b91c1c;
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 7px;
+    }
+
+    .call-alert-body {
+      color: #374151;
+      line-height: 1.5;
+      margin-bottom: 13px;
+    }
+
+    .call-alert-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .call-alert-actions button {
+      border: none;
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .answer-call-btn {
+      background: #16a34a;
+      color: white;
+    }
+
+    .dismiss-call-btn {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    @keyframes callPulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.02); }
+    }
+
+
+
+    #patientMessages {
+    height: 500px;
+    max-height: 350px;
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    padding: 15px;
+    box-sizing: border-box;
+
+    scroll-behavior: smooth;
 }
-else if (data.percentage > 20) {
-  progressBar.style.background = "linear-gradient(to right, #f59e0b, #d97706)";
-}
-else {
-  progressBar.style.background = "linear-gradient(to right, #ef4444, #b91c1c)";
-}
-    const percentage = data.percentage;
-    const alarm = document.getElementById("alarmSound");
-    const alertLevels = [20, 15, 10, 5, 0];
 
-    for (let level of alertLevels) {
-      if (percentage <= level && lastAlertLevel > level) {
-        alarm.play().catch(() => {});
-        lastAlertLevel = level;
-        break;
+#patientMessages::-webkit-scrollbar {
+    width: 6px;
+}
+
+#patientMessages::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+}
+    /* =========================
+       RESPONSIVE
+       ========================= */
+
+    @media (max-width: 900px) {
+      .header-right {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .patient-chat-container {
+        grid-template-columns: 1fr;
+      }
+
+      .patient-list {
+        max-height: 180px;
+      }
+
+      .patient-chat-header {
+        flex-direction: column;
       }
     }
 
-    const statusElement = document.getElementById("displayStatus");
+    @media (max-width: 600px) {
+      .header-tools {
+        width: 100%;
+      }
+
+      .header-tool-btn {
+        width: 100%;
+      }
+
+      .ai-chat-input-area,
+      .patient-chat-input {
+        flex-direction: column;
+      }
+
+      .ai-send-btn,
+      .patient-send-btn {
+        height: 46px;
+      }
+    }
+
+
+
+
     
-    const banner = document.getElementById("statusBanner");
+  </style>
+</head>
 
-   
+<body>
 
-   if (data.status === "Running") {
-  lastAlertLevel = 100;
-  statusElement.style.color = "green";
-  banner.className = "statusBanner running";
-  banner.innerText = "IV Running Normally";
+  <!-- ================= HEADER ================= -->
+
+  <div class="top-header">
+
+    <div class="logo">
+      💧 Smart <span>IV</span> Dashboard
+    </div>
+
+    <div class="header-right">
+
+      <div class="nurse-box">
+        Nurse: <strong id="nurseName"></strong>
+      </div>
+
+      <div class="header-tools">
+
+        <button
+          id="aiChatBtn"
+          class="header-tool-btn ai-chat-btn"
+          type="button"
+          onclick="openDashboardView('ai')"
+        >
+          🤖 AI CHAT
+        </button>
+
+        <button
+          id="patientChatBtn"
+          class="header-tool-btn patient-chat-btn"
+          type="button"
+          onclick="openDashboardView('patients')"
+        >
+          💬 PATIENT CHAT
+        </button>
+
+      </div>
+
+      <button id="logoutBtn" type="button">
+        Logout
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ================= ALARM ================= -->
+
+  <audio id="alarmSound" preload="auto">
+    <source src="alarm.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- ================= DASHBOARD ================= -->
+
+  <div class="dashboard">
+
+    <!-- ================= LEFT PANEL ================= -->
+
+    <div class="left-panel">
+
+      <h2>Patient Management</h2>
+
+      <select id="patients"></select>
+
+      <input id="name" placeholder="Patient Name">
+      <input id="bed" placeholder="Bed Number">
+      <input id="fluid" placeholder="IV Fluid">
+      <input id="totalML" placeholder="Total ML">
+
+      <input
+        id="standId"
+        placeholder="Stand ID (e.g. STAND-01)"
+      >
+
+      <button id="addBtn" class="btn green" type="button">
+        <i class="fa-solid fa-plus icon"></i>
+        Add
+      </button>
+
+      <button id="newBagBtn" class="btn blue" type="button">
+        <i class="fa-solid fa-droplet icon"></i>
+        New Bag
+      </button>
+
+      <button id="updateBtn" class="btn orange" type="button">
+        <i class="fa-solid fa-rotate icon"></i>
+        Update
+      </button>
+
+      <button id="deleteBtn" class="btn red" type="button">
+        <i class="fa-solid fa-trash icon"></i>
+        Delete
+      </button>
+
+    </div>
+
+    <!-- ================= RIGHT PANEL ================= -->
+
+    <div class="right-panel">
+
+      <!-- ================= IV MONITORING ================= -->
+
+      <div id="monitoringView">
+
+        <h2>IV Live Monitoring</h2>
+
+        <div id="statusBanner" class="statusBanner">
+          IV Running Normally
+        </div>
+
+        <div class="info-grid">
+
+          <div class="info-card">
+            <h4>IV Fluid</h4>
+            <p id="displayFluid">-</p>
+          </div>
+
+          <div class="info-card">
+            <h4>Remaining</h4>
+            <p>
+              <span id="displayRemaining">-</span>
+              ml
+            </p>
+          </div>
+
+          <div class="info-card">
+            <h4>Percentage</h4>
+            <p>
+              <span id="displayPercentage">-</span>
+              %
+            </p>
+          </div>
+
+          <div class="info-card">
+            <h4>Status</h4>
+            <p id="displayStatus">-</p>
+          </div>
+
+        </div>
+
+        <div class="progress-section">
+
+          <h3>Progress Bar</h3>
+
+          <div class="progress-container">
+            <div
+              id="progressBar"
+              class="progress-bar"
+            ></div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ================= AI CHAT VIEW ================= -->
+
+      <div
+        id="aiChatView"
+        class="special-view"
+        style="display:none;"
+      >
+
+        <div class="special-view-header">
+
+          <h2>🤖 Smart IV AI Assistant</h2>
+
+          <button
+            class="close-view-btn"
+            type="button"
+            onclick="closeDashboardView()"
+          >
+            ✕ Close
+          </button>
+
+        </div>
+
+        <div class="ai-chat-container">
+
+          <div class="ai-chat-info">
+            🤖 AI Nurse Assistant
+            <br>
+            <small>
+              Ask about the selected patient, IV status,
+              alerts, remaining fluid, or system information.
+            </small>
+          </div>
+
+          <div
+            id="nurseAIChatMessages"
+            class="ai-chat-messages"
+          >
+            <div class="nurse-chat-message ai">
+              👋 Hello Nurse!
+              <br>
+              I am your Smart IV AI Assistant.
+              Select a patient if you want patient-specific information.
+            </div>
+          </div>
+
+          <div class="ai-chat-input-area">
+
+            <input
+              id="nurseAIInput"
+              type="text"
+              placeholder="Ask AI..."
+              autocomplete="off"
+            >
+
+            <button
+              id="nurseAISendBtn"
+              class="ai-send-btn"
+              type="button"
+              onclick="sendNurseAIMessage()"
+            >
+              Send
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ================= PATIENT CHAT VIEW ================= -->
+
+      <div
+        id="patientChatView"
+        class="special-view"
+        style="display:none;"
+      >
+
+        <div class="special-view-header">
+
+          <h2>💬 Patient Communication</h2>
+
+          <button
+            class="close-view-btn"
+            type="button"
+            onclick="closeDashboardView()"
+          >
+            ✕ Close
+          </button>
+
+        </div>
+
+        <div class="patient-chat-container">
+
+          <!-- PATIENT LIST -->
+
+          <div class="patient-list">
+
+            <div class="patient-list-title">
+              Patients
+            </div>
+
+            <div id="chatPatientList"></div>
+
+          </div>
+
+          <!-- CHAT -->
+
+          <div class="patient-chat-main">
+
+            <div class="patient-chat-header">
+
+              <div>
+                <strong id="patientChatTitle">
+                  Patient Chat
+                </strong>
+
+                <span id="patientChatSubtitle">
+                  Select a patient to start communication
+                </span>
+
+                <div
+                  id="patientChatStatus"
+                  class="chat-status"
+                >
+                  ● Not connected
+                </div>
+              </div>
+
+              <div class="patient-chat-actions">
+
+                <button
+                  class="chat-action-btn chat-call-btn"
+                  type="button"
+                  onclick="callSelectedPatient()"
+                >
+                  📞 Call Patient
+                </button>
+
+                <button
+                  class="chat-action-btn chat-refresh-btn"
+                  type="button"
+                  onclick="loadChatPatients()"
+                >
+                  ↻ Refresh
+                </button>
+
+              </div>
+
+            </div>
+
+            <div
+              id="patientMessages"
+              class="patient-messages"
+            >
+              <div class="patient-empty">
+                💬<br>
+                Select a patient from the left to start chatting.
+              </div>
+            </div>
+
+            <div class="patient-chat-input">
+
+              <input
+                id="patientChatInput"
+                type="text"
+                placeholder="Write a message..."
+                autocomplete="off"
+                disabled
+              >
+
+              <button
+                id="patientSendBtn"
+                class="patient-send-btn"
+                type="button"
+                onclick="sendPatientMessage()"
+                disabled
+              >
+                Send
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= INCOMING CALL ALERT ================= -->
+
+  <div id="callAlert" class="call-alert">
+
+    <div class="call-alert-title">
+      📞 Patient Nurse Call
+    </div>
+
+    <div id="callAlertBody" class="call-alert-body">
+      A patient is requesting assistance.
+    </div>
+
+    <div class="call-alert-actions">
+
+      <button
+        class="answer-call-btn"
+        type="button"
+        onclick="answerPatientCall()"
+      >
+        ✓ Answer
+      </button>
+
+      <button
+        class="dismiss-call-btn"
+        type="button"
+        onclick="dismissPatientCall()"
+      >
+        Dismiss
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- ================= SOCKET + EXISTING APP SCRIPT ================= -->
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+
+
+
+
+
+
+
+
+
+  <script>
+
+"use strict";
+
+/* =========================================================
+   SOCKET
+   ========================================================= */
+
+const socket = io();
+
+let lastAlertLevel = 100;
+
+let selectedChatPatient = null;
+
+let chatPatientsCache = [];
+
+let currentIncomingCall = null;
+
+
+/* =========================================================
+   DASHBOARD VIEW SWITCHING
+   ========================================================= */
+
+function openDashboardView(view) {
+
+    const monitoring =
+        document.getElementById("monitoringView");
+
+    const aiChat =
+        document.getElementById("aiChatView");
+
+    const patientChat =
+        document.getElementById("patientChatView");
+
+    const aiButton =
+        document.getElementById("aiChatBtn");
+
+    const patientButton =
+        document.getElementById("patientChatBtn");
+
+
+    if (!monitoring || !aiChat || !patientChat) {
+        return;
+    }
+
+
+    /* Hide all views */
+
+    monitoring.style.display = "none";
+
+    aiChat.style.display = "none";
+
+    patientChat.style.display = "none";
+
+
+    /* Remove active buttons */
+
+    if (aiButton) {
+        aiButton.classList.remove("active");
+    }
+
+    if (patientButton) {
+        patientButton.classList.remove("active");
+    }
+
+
+    /* Open AI */
+
+    if (view === "ai") {
+
+        aiChat.style.display = "block";
+
+        if (aiButton) {
+            aiButton.classList.add("active");
+        }
+
+        const input =
+            document.getElementById("nurseAIInput");
+
+        if (input) {
+            input.focus();
+        }
+    }
+
+
+    /* Open Patient Chat */
+
+    if (view === "patients") {
+
+        patientChat.style.display = "block";
+
+        if (patientButton) {
+            patientButton.classList.add("active");
+        }
+
+        loadChatPatients();
+    }
 }
 
-else if (data.status === "Low") {
-  statusElement.style.color = "orange";
-  banner.className = "statusBanner low";
-  banner.innerText = "IV Level Low";
+
+/* =========================================================
+   CLOSE SPECIAL VIEW
+   ========================================================= */
+
+function closeDashboardView() {
+
+    const monitoring =
+        document.getElementById("monitoringView");
+
+    const aiChat =
+        document.getElementById("aiChatView");
+
+    const patientChat =
+        document.getElementById("patientChatView");
+
+    const aiButton =
+        document.getElementById("aiChatBtn");
+
+    const patientButton =
+        document.getElementById("patientChatBtn");
+
+
+    if (monitoring) {
+        monitoring.style.display = "block";
+    }
+
+    if (aiChat) {
+        aiChat.style.display = "none";
+    }
+
+    if (patientChat) {
+        patientChat.style.display = "none";
+    }
+
+    if (aiButton) {
+        aiButton.classList.remove("active");
+    }
+
+    if (patientButton) {
+        patientButton.classList.remove("active");
+    }
 }
 
-else if (data.status === "Critical") {
-  statusElement.style.color = "red";
-  banner.className = "statusBanner critical";
-  banner.innerText = "CRITICAL - IV Almost Empty!";
+
+/* =========================================================
+   AUDIO UNLOCK
+   ========================================================= */
+
+function unlockAudio() {
+
+    const alarm =
+        document.getElementById("alarmSound");
+
+    if (!alarm) {
+        return;
+    }
+
+
+    alarm.play()
+        .then(() => {
+
+            alarm.pause();
+
+            alarm.currentTime = 0;
+
+        })
+        .catch(() => {});
+
+
+    document.removeEventListener(
+        "click",
+        unlockAudio
+    );
+
+    document.removeEventListener(
+        "keydown",
+        unlockAudio
+    );
+
+    document.removeEventListener(
+        "touchstart",
+        unlockAudio
+    );
 }
 
-else if (data.status === "Finished") {
-  statusElement.style.color = "gray";
-  banner.className = "statusBanner finished";
-  banner.innerText = "IV Finished";
-}
-  }
+
+document.addEventListener(
+    "click",
+    unlockAudio
+);
+
+document.addEventListener(
+    "keydown",
+    unlockAudio
+);
+
+document.addEventListener(
+    "touchstart",
+    unlockAudio
+);
+
+
+/* =========================================================
+   IV REAL-TIME UPDATE
+   ========================================================= */
+
+socket.on("patientUpdated", (data) => {
+
+    if (!data) {
+        return;
+    }
+
+
+    const patientsSelect =
+        document.getElementById("patients");
+
+    if (!patientsSelect) {
+        return;
+    }
+
+
+    const selectedId =
+        patientsSelect.value;
+
+
+    if (
+        String(selectedId) !==
+        String(data.patientId)
+    ) {
+        return;
+    }
+
+
+    const remainingElement =
+        document.getElementById(
+            "displayRemaining"
+        );
+
+    const percentageElement =
+        document.getElementById(
+            "displayPercentage"
+        );
+
+    const statusElement =
+        document.getElementById(
+            "displayStatus"
+        );
+
+    const progressBar =
+        document.getElementById(
+            "progressBar"
+        );
+
+    const banner =
+        document.getElementById(
+            "statusBanner"
+        );
+
+
+    if (remainingElement) {
+
+        remainingElement.innerText =
+            data.remainingML ?? "-";
+
+    }
+
+
+    if (percentageElement) {
+
+        percentageElement.innerText =
+            data.percentage ?? "-";
+
+    }
+
+
+    if (statusElement) {
+
+        statusElement.innerText =
+            data.status ?? "-";
+
+    }
+
+
+    const percentage =
+        Number(data.percentage ?? 0);
+
+
+    if (progressBar) {
+
+        const safePercentage =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    percentage
+                )
+            );
+
+        progressBar.style.width =
+            safePercentage + "%";
+
+
+        if (percentage > 50) {
+
+            progressBar.style.background =
+                "linear-gradient(to right, #10b981, #059669)";
+
+        }
+
+        else if (percentage > 20) {
+
+            progressBar.style.background =
+                "linear-gradient(to right, #f59e0b, #d97706)";
+
+        }
+
+        else {
+
+            progressBar.style.background =
+                "linear-gradient(to right, #ef4444, #b91c1c)";
+
+        }
+    }
+
+
+    const alarm =
+        document.getElementById(
+            "alarmSound"
+        );
+
+
+    const alertLevels =
+        [20, 15, 10, 5, 0];
+
+
+    for (
+        const level of alertLevels
+    ) {
+
+        if (
+            percentage <= level &&
+            lastAlertLevel > level
+        ) {
+
+            if (alarm) {
+
+                alarm.play()
+                    .catch(() => {});
+
+            }
+
+            lastAlertLevel =
+                level;
+
+            break;
+        }
+    }
+
+
+    if (data.status === "Running") {
+
+        lastAlertLevel = 100;
+
+
+        if (statusElement) {
+
+            statusElement.style.color =
+                "green";
+
+        }
+
+
+        if (banner) {
+
+            banner.className =
+                "statusBanner running";
+
+            banner.innerText =
+                "IV Running Normally";
+
+        }
+
+    }
+
+
+    else if (data.status === "Low") {
+
+        if (statusElement) {
+
+            statusElement.style.color =
+                "orange";
+
+        }
+
+
+        if (banner) {
+
+            banner.className =
+                "statusBanner low";
+
+            banner.innerText =
+                "IV Level Low";
+
+        }
+
+    }
+
+
+    else if (data.status === "Critical") {
+
+        if (statusElement) {
+
+            statusElement.style.color =
+                "red";
+
+        }
+
+
+        if (banner) {
+
+            banner.className =
+                "statusBanner critical";
+
+            banner.innerText =
+                "CRITICAL - IV Almost Empty!";
+
+        }
+
+    }
+
+
+    else if (data.status === "Finished") {
+
+        if (statusElement) {
+
+            statusElement.style.color =
+                "gray";
+
+        }
+
+
+        if (banner) {
+
+            banner.className =
+                "statusBanner finished";
+
+            banner.innerText =
+                "IV Finished";
+
+        }
+
+    }
+
 });
-</script>
-<script>
-if (localStorage.getItem("role") === "admin") {
-  window.open("admin.html", "_blank");
+
+
+/* =========================================================
+   LOAD NURSE PATIENTS INTO MAIN DROPDOWN
+   ========================================================= */
+
+async function loadDashboardPatients() {
+
+    const select =
+        document.getElementById("patients");
+
+    if (!select) {
+        return;
+    }
+
+    const token =
+        localStorage.getItem("token");
+
+    if (!token) {
+        console.error("❌ No authentication token found.");
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch("/api/patients", {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + token
+                },
+                cache: "no-store"
+            });
+
+        if (!response.ok) {
+            throw new Error(
+                "Failed to load patients: HTTP " +
+                response.status
+            );
+        }
+
+        const patients = await response.json();
+
+        chatPatientsCache =
+            Array.isArray(patients)
+                ? patients
+                : [];
+
+        select.innerHTML = "";
+
+        const placeholder =
+            document.createElement("option");
+
+        placeholder.value = "";
+        placeholder.textContent =
+            chatPatientsCache.length
+                ? "-- Select Patient --"
+                : "-- No Patients Assigned --";
+
+        select.appendChild(placeholder);
+
+        chatPatientsCache.forEach((patient) => {
+
+            const option =
+                document.createElement("option");
+
+            option.value =
+                patient.patientId;
+
+            option.textContent =
+                (patient.name || "Unknown Patient") +
+                " | Bed: " +
+                (patient.room ?? "-");
+
+            option.dataset.name =
+                patient.name || "";
+
+            option.dataset.room =
+                patient.room ?? "";
+
+            option.dataset.fluid =
+                patient.fluid || "";
+
+            option.dataset.totalml =
+                patient.totalML ?? 0;
+
+            option.dataset.remaining =
+                patient.remainingML ?? 0;
+
+            option.dataset.percentage =
+                patient.percentage ?? 0;
+
+            option.dataset.status =
+                patient.status || "";
+
+            option.dataset.nurse =
+                patient.nurse || "";
+
+            option.dataset.standid =
+                patient.standId || "";
+
+            select.appendChild(option);
+
+        });
+
+        /*
+           Keep the first patient available immediately.
+           The user can still change the selection normally.
+        */
+        if (chatPatientsCache.length === 1) {
+            select.value =
+                String(chatPatientsCache[0].patientId);
+        }
+
+        /*
+           Populate the existing Patient Management fields
+           when the selected patient changes.
+        */
+        select.onchange = function () {
+
+            const patient =
+                chatPatientsCache.find(
+                    item =>
+                        String(item.patientId) ===
+                        String(select.value)
+                );
+
+            if (!patient) {
+                return;
+            }
+
+            const nameInput =
+                document.getElementById("name");
+
+            const bedInput =
+                document.getElementById("bed");
+
+            const fluidInput =
+                document.getElementById("fluid");
+
+            const totalInput =
+                document.getElementById("totalML");
+
+            const standInput =
+                document.getElementById("standId");
+
+            if (nameInput) {
+                nameInput.value =
+                    patient.name || "";
+            }
+
+            if (bedInput) {
+                bedInput.value =
+                    patient.room ?? "";
+            }
+
+            if (fluidInput) {
+                fluidInput.value =
+                    patient.fluid || "";
+            }
+
+            if (totalInput) {
+                totalInput.value =
+                    patient.totalML ?? "";
+            }
+
+            if (standInput) {
+                standInput.value =
+                    patient.standId || "";
+            }
+
+            /*
+               Refresh monitoring immediately.
+            */
+            updateDashboardPatientDisplay(patient);
+        };
+
+        /*
+           If only one patient exists, display it immediately.
+        */
+        if (chatPatientsCache.length === 1) {
+            select.dispatchEvent(new Event("change"));
+        }
+
+        console.log(
+            "👨‍⚕️ Nurse patients loaded:",
+            chatPatientsCache.length
+        );
+
+    } catch (error) {
+
+        console.error(
+            "❌ Dashboard patients error:",
+            error
+        );
+
+        select.innerHTML = "";
+
+        const errorOption =
+            document.createElement("option");
+
+        errorOption.value = "";
+        errorOption.textContent =
+            "❌ Failed to load patients";
+
+        select.appendChild(errorOption);
+    }
 }
+
+
+/* =========================================================
+   UPDATE DASHBOARD PATIENT DISPLAY
+   ========================================================= */
+
+function updateDashboardPatientDisplay(patient) {
+
+    if (!patient) {
+        return;
+    }
+
+    const fluid =
+        document.getElementById("displayFluid");
+
+    const remaining =
+        document.getElementById("displayRemaining");
+
+    const percentage =
+        document.getElementById("displayPercentage");
+
+    const status =
+        document.getElementById("displayStatus");
+
+    const progress =
+        document.getElementById("progressBar");
+
+    if (fluid) {
+        fluid.textContent =
+            patient.fluid || "-";
+    }
+
+    if (remaining) {
+        remaining.textContent =
+            patient.remainingML ?? "-";
+    }
+
+    if (percentage) {
+        percentage.textContent =
+            patient.percentage ?? "-";
+    }
+
+    if (status) {
+        status.textContent =
+            patient.status || "-";
+    }
+
+    if (progress) {
+        const value = Math.max(
+            0,
+            Math.min(
+                100,
+                Number(patient.percentage ?? 0)
+            )
+        );
+
+        progress.style.width =
+            value + "%";
+    }
+}
+
+
+/* =========================================================
+   START DASHBOARD DATA
+   ========================================================= */
+
+if (document.readyState === "loading") {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        loadDashboardPatients
+    );
+
+} else {
+
+    loadDashboardPatients();
+}
+
+
+/* =========================================================
+   GET SELECTED PATIENT
+   IMPORTANT:
+   Get patient from SERVER, not from HTML option.
+   ========================================================= */
+
+async function getSelectedDashboardPatient() {
+
+    const select =
+        document.getElementById("patients");
+
+    if (!select || !select.value) {
+        return null;
+    }
+
+    const patientId = select.value;
+
+    const cachedPatient =
+        chatPatientsCache.find(
+            patient =>
+                String(patient.patientId) ===
+                String(patientId)
+        );
+
+    if (cachedPatient) {
+        return cachedPatient;
+    }
+
+    const token =
+        localStorage.getItem("token");
+
+    if (!token) {
+        throw new Error(
+            "Authentication token not found"
+        );
+    }
+
+    const response =
+        await fetch("/api/patients", {
+            method: "GET",
+            headers: {
+                "Authorization":
+                    "Bearer " + token
+            },
+            cache: "no-store"
+        });
+
+    if (!response.ok) {
+        throw new Error(
+            "Failed to load nurse patients"
+        );
+    }
+
+    const patients =
+        await response.json();
+
+    chatPatientsCache =
+        Array.isArray(patients)
+            ? patients
+            : [];
+
+    const patient =
+        chatPatientsCache.find(
+            item =>
+                String(item.patientId) ===
+                String(patientId)
+        );
+
+    if (!patient) {
+        throw new Error(
+            "Selected patient was not found in nurse patients"
+        );
+    }
+
+    return patient;
+}
+
+
+/* =========================================================
+   NURSE AI CHAT
+   ========================================================= */
+
+function addNurseAIMessage(
+    message,
+    sender
+) {
+
+    const container =
+        document.getElementById(
+            "nurseAIChatMessages"
+        );
+
+
+    if (!container) {
+        return null;
+    }
+
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.className =
+        "nurse-chat-message " +
+        sender;
+
+
+    div.textContent =
+        message;
+
+
+    container.appendChild(
+        div
+    );
+
+
+    container.scrollTop =
+        container.scrollHeight;
+
+
+    return div;
+}
+
+
+/* =========================================================
+   SEND AI MESSAGE
+   ========================================================= */
+async function sendNurseAIMessage() {
+
+    const input =
+        document.getElementById("nurseAIInput");
+
+    const button =
+        document.getElementById("nurseAISendBtn");
+
+    if (!input) {
+        return;
+    }
+
+    const question =
+        input.value.trim();
+
+    if (!question) {
+        return;
+    }
+
+    addNurseAIMessage(
+        question,
+        "user"
+    );
+
+    input.value = "";
+    input.disabled = true;
+
+    if (button) {
+        button.disabled = true;
+    }
+
+    const loadingMessage =
+        addNurseAIMessage(
+            "🤖 جاري التفكير...",
+            "ai"
+        );
+
+    try {
+
+        const patient =
+            await getSelectedDashboardPatient();
+
+        console.log(
+            "🤖 AI Selected Patient:",
+            patient
+        );
+
+        if (!patient) {
+            throw new Error(
+                "Please select a patient first."
+            );
+        }
+
+        let estimatedTime = "";
+
+        try {
+
+            const predictionResponse =
+                await fetch(
+                    "/api/ai/predict/" +
+                    encodeURIComponent(
+                        patient.patientId
+                    ),
+                    {
+                        method: "GET",
+                        cache: "no-store"
+                    }
+                );
+
+            if (predictionResponse.ok) {
+
+                const predictionData =
+                    await predictionResponse.json();
+
+                console.log(
+                    "🤖 AI Prediction:",
+                    predictionData
+                );
+
+                if (
+                    predictionData.success &&
+                    predictionData.predictionAvailable
+                ) {
+
+                    const minutes =
+                        Number(
+                            predictionData.predictedRemainingTime
+                        );
+
+                    if (
+                        Number.isFinite(minutes) &&
+                        minutes > 0
+                    ) {
+                        estimatedTime =
+                            Math.round(minutes) +
+                            " min";
+                    }
+                }
+            }
+
+        } catch (predictionError) {
+
+            console.warn(
+                "⚠️ Prediction unavailable:",
+                predictionError
+            );
+
+            estimatedTime = "";
+        }
+
+        console.log(
+            "🤖 Sending to AI:",
+            {
+                question,
+                patient,
+                estimatedTime
+            }
+        );
+
+
+        console.log("👨‍⚕️ Current Nurse:", localStorage.getItem("username"));
+console.log("👤 Selected Patient:", patient);
+
+        const response =
+            await fetch(
+                "/api/ai/chat",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                   body: JSON.stringify({
+
+    question:
+        question,
+
+        mode: "nurse",
+
+    nurse: {
+    username:
+        patient.nurse || "Unknown Nurse"
+},
+
+    patient:
+        patient,
+
+    estimatedTime:
+        estimatedTime
+
+})
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (loadingMessage) {
+            loadingMessage.remove();
+        }
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
+            throw new Error(
+                data.message ||
+                "AI request failed"
+            );
+        }
+
+        addNurseAIMessage(
+            data.answer ||
+            "المعلومة غير متوفرة حاليًا.",
+            "ai"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "❌ Nurse AI Error:",
+            error
+        );
+
+        if (loadingMessage) {
+            loadingMessage.remove();
+        }
+
+        addNurseAIMessage(
+            "⚠️ عذرًا، حدث خطأ أثناء الاتصال بالمساعد الذكي.",
+            "ai"
+        );
+
+    } finally {
+
+        input.disabled = false;
+
+        if (button) {
+            button.disabled = false;
+        }
+
+        input.focus();
+    }
+}
+
+
+/* =========================================================
+   AI ENTER KEY
+   ========================================================= */
+
+const nurseAIInput =
+    document.getElementById(
+        "nurseAIInput"
+    );
+
+
+if (nurseAIInput) {
+
+    nurseAIInput.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                event.preventDefault();
+
+                sendNurseAIMessage();
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   LOAD PATIENTS FOR CHAT
+   ========================================================= */
+
+async function loadChatPatients() {
+
+    const patientList =
+        document.getElementById(
+            "chatPatientList"
+        );
+
+
+    if (!patientList) {
+        return;
+    }
+
+
+    patientList.innerHTML = `
+
+        <div class="patient-chat-item">
+
+            <div class="patient-chat-item-name">
+                Loading...
+            </div>
+
+            <div class="patient-chat-item-bed">
+                Please wait
+            </div>
+
+        </div>
+
+    `;
+
+
+    try {
+
+        const token =
+            localStorage.getItem(
+                "token"
+            );
+
+
+        if (!token) {
+
+            throw new Error(
+                "Authentication token not found"
+            );
+
+        }
+
+
+        const response =
+            await fetch(
+                "/api/patients",
+                {
+
+                    method: "GET",
+
+                    headers: {
+
+                        "Authorization":
+                            "Bearer " + token
+
+                    },
+
+                    cache: "no-store"
+
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Failed to load patients"
+            );
+
+        }
+
+
+        const patients =
+            await response.json();
+
+
+        chatPatientsCache =
+            Array.isArray(patients)
+                ? patients
+                : [];
+
+
+        patientList.innerHTML =
+            "";
+
+
+        if (
+            !chatPatientsCache.length
+        ) {
+
+            patientList.innerHTML = `
+
+                <div class="patient-chat-item">
+
+                    <div class="patient-chat-item-name">
+                        No patients
+                    </div>
+
+                    <div class="patient-chat-item-bed">
+                        No patients are assigned to you.
+                    </div>
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        /*
+           Create patient cards
+        */
+
+        chatPatientsCache.forEach(
+            patient => {
+
+                const item =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                item.className =
+                    "patient-chat-item";
+
+
+                if (
+                    selectedChatPatient &&
+                    String(
+                        selectedChatPatient.patientId
+                    ) ===
+                    String(
+                        patient.patientId
+                    )
+                ) {
+
+                    item.classList.add(
+                        "active"
+                    );
+
+                }
+
+
+                const name =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                name.className =
+                    "patient-chat-item-name";
+
+
+                name.textContent =
+                    patient.name ||
+                    "Unknown Patient";
+
+
+                const bed =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                bed.className =
+                    "patient-chat-item-bed";
+
+
+                bed.textContent =
+                    "Bed " +
+                    (patient.room ?? "-") +
+                    " • " +
+                    (patient.status ||
+                        "Unknown");
+
+
+                item.appendChild(
+                    name
+                );
+
+
+                item.appendChild(
+                    bed
+                );
+
+
+                item.addEventListener(
+                    "click",
+                    function() {
+
+                        selectChatPatient(
+                            patient,
+                            item
+                        );
+
+                    }
+                );
+
+
+                patientList.appendChild(
+                    item
+                );
+
+            }
+        );
+
+    }
+
+
+    catch (error) {
+
+        console.error(
+            "❌ Chat Patients Error:",
+            error
+        );
+
+
+        patientList.innerHTML = `
+
+            <div class="patient-chat-item">
+
+                <div class="patient-chat-item-name">
+                    ❌ Failed to load patients
+                </div>
+
+                <div class="patient-chat-item-bed">
+                    Check login and server connection.
+                </div>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+/* =========================================================
+   SELECT CHAT PATIENT
+   ========================================================= */
+
+function selectChatPatient(
+    patient,
+    element
+) {
+
+    if (
+        !patient ||
+        !patient.patientId
+    ) {
+
+        return;
+
+    }
+
+
+    selectedChatPatient =
+        patient;
+
+
+    /*
+       Remove old active
+    */
+
+    document
+        .querySelectorAll(
+            "#chatPatientList .patient-chat-item"
+        )
+        .forEach(
+            item =>
+                item.classList.remove(
+                    "active"
+                )
+        );
+
+
+    /*
+       Activate selected
+    */
+
+    if (element) {
+
+        element.classList.add(
+            "active"
+        );
+
+    }
+
+
+    const title =
+        document.getElementById(
+            "patientChatTitle"
+        );
+
+
+    const subtitle =
+        document.getElementById(
+            "patientChatSubtitle"
+        );
+
+
+    const status =
+        document.getElementById(
+            "patientChatStatus"
+        );
+
+
+    const messages =
+        document.getElementById(
+            "patientMessages"
+        );
+
+
+    const input =
+        document.getElementById(
+            "patientChatInput"
+        );
+
+
+    const sendButton =
+        document.getElementById(
+            "patientSendBtn"
+        );
+
+
+    if (title) {
+
+        title.textContent =
+            "💬 " +
+            (
+                patient.name ||
+                "Patient"
+            );
+
+    }
+
+
+    if (subtitle) {
+
+        subtitle.textContent =
+            "Bed " +
+            (patient.room ?? "-") +
+            " • Patient ID: " +
+            patient.patientId;
+
+    }
+
+
+    if (status) {
+
+        status.textContent =
+            "● Connecting...";
+
+        status.style.color =
+            "#f59e0b";
+
+    }
+
+
+    if (messages) {
+
+        messages.innerHTML =
+            "";
+
+    }
+
+
+    if (input) {
+
+        input.disabled =
+            false;
+
+    }
+
+
+    if (sendButton) {
+
+        sendButton.disabled =
+            false;
+
+    }
+
+
+    /*
+       Join Socket.IO room
+    */
+
+    socket.emit(
+        "joinNurseChat",
+        {
+
+            patientId:
+                patient.patientId
+
+        }
+    );
+
+
+    if (status) {
+
+        status.textContent =
+            "● Connected to chat";
+
+        status.style.color =
+            "#16a34a";
+
+    }
+
+
+    addPatientChatMessage(
+        "Connected to " +
+        (
+            patient.name ||
+            "patient"
+        ),
+        "system"
+    );
+
+
+    if (input) {
+
+        input.focus();
+
+    }
+
+}
+
+
+/* =========================================================
+   ADD CHAT MESSAGE
+   ========================================================= */
+
+function addPatientChatMessage(
+    message,
+    sender
+) {
+
+    const messages =
+        document.getElementById(
+            "patientMessages"
+        );
+
+
+    if (!messages) {
+        return;
+    }
+
+
+    const empty =
+        messages.querySelector(
+            ".patient-empty"
+        );
+
+
+    if (empty) {
+
+        empty.remove();
+
+    }
+
+
+    const messageDiv =
+        document.createElement(
+            "div"
+        );
+
+
+    messageDiv.className =
+        "patient-chat-message " +
+        sender;
+
+
+    if (sender === "nurse") {
+
+        const senderDiv =
+            document.createElement(
+                "div"
+            );
+
+        senderDiv.className =
+            "message-sender";
+
+        senderDiv.textContent =
+            "👨‍⚕️ You";
+
+
+        const textDiv =
+            document.createElement(
+                "div"
+            );
+
+        textDiv.className =
+            "message-text";
+
+        textDiv.textContent =
+            message;
+
+
+        messageDiv.appendChild(
+            senderDiv
+        );
+
+        messageDiv.appendChild(
+            textDiv
+        );
+
+    }
+
+
+    else if (sender === "patient") {
+
+        const senderDiv =
+            document.createElement(
+                "div"
+            );
+
+        senderDiv.className =
+            "message-sender";
+
+        senderDiv.textContent =
+            "🧑 Patient";
+
+
+        const textDiv =
+            document.createElement(
+                "div"
+            );
+
+        textDiv.className =
+            "message-text";
+
+        textDiv.textContent =
+            message;
+
+
+        messageDiv.appendChild(
+            senderDiv
+        );
+
+        messageDiv.appendChild(
+            textDiv
+        );
+
+    }
+
+
+    else {
+
+        const textDiv =
+            document.createElement(
+                "div"
+            );
+
+        textDiv.className =
+            "message-text";
+
+        textDiv.textContent =
+            "💬 " +
+            message;
+
+
+        messageDiv.appendChild(
+            textDiv
+        );
+
+    }
+
+
+    messages.appendChild(
+        messageDiv
+    );
+
+
+    messages.scrollTop =
+        messages.scrollHeight;
+
+}
+
+
+/* =========================================================
+   SEND PATIENT MESSAGE
+   ========================================================= */
+
+function sendPatientMessage() {
+
+    if (!selectedChatPatient) {
+
+        alert(
+            "Please select a patient first."
+        );
+
+        return;
+
+    }
+
+
+    const input =
+        document.getElementById(
+            "patientChatInput"
+        );
+
+
+    if (!input) {
+        return;
+    }
+
+
+    const message =
+        input.value.trim();
+
+
+    if (!message) {
+        return;
+    }
+
+
+    socket.emit(
+        "nurseMessage",
+        {
+
+            patientId:
+                selectedChatPatient.patientId,
+
+            message:
+                message
+
+        }
+    );
+
+
+    input.value =
+        "";
+
+
+    input.focus();
+
+}
+
+
+/* =========================================================
+   PATIENT CHAT ENTER
+   ========================================================= */
+
+const patientChatInput =
+    document.getElementById(
+        "patientChatInput"
+    );
+
+
+if (patientChatInput) {
+
+    patientChatInput.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                event.preventDefault();
+
+                sendPatientMessage();
+
+            }
+
+        }
+    );
+
+}
+
+
+
+
+/* =========================================================
+   RECEIVE CHAT HISTORY
+   ========================================================= */
+
+socket.on(
+    "chatHistory",
+    function(messages) {
+
+        if (!Array.isArray(messages)) {
+            return;
+        }
+
+        if (!selectedChatPatient) {
+            return;
+        }
+
+        console.log(
+            "💬 Nurse chat history received:",
+            messages
+        );
+
+        // Clear current chat messages
+        const chatBox =
+    document.getElementById(
+        "patientMessages"
+    );
+
+        if (chatBox) {
+            chatBox.innerHTML = "";
+        }
+
+        // Display saved messages
+        messages.forEach(function(data) {
+
+            if (!data || !data.message) {
+                return;
+            }
+
+            if (
+                String(data.patientId) !==
+                String(
+                    selectedChatPatient.patientId
+                )
+            ) {
+                return;
+            }
+
+            if (data.sender === "patient") {
+
+                addPatientChatMessage(
+                    data.message,
+                    "patient"
+                );
+
+            }
+
+            else if (data.sender === "nurse") {
+
+                addPatientChatMessage(
+                    data.message,
+                    "nurse"
+                );
+
+            }
+
+        });
+
+    }
+);
+
+/* =========================================================
+   RECEIVE PATIENT MESSAGE
+   ========================================================= */
+
+socket.on(
+    "newPatientMessage",
+    function(data) {
+
+        if (
+            !data ||
+            !selectedChatPatient
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            String(data.patientId) !==
+            String(
+                selectedChatPatient.patientId
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        addPatientChatMessage(
+            data.message,
+            "patient"
+        );
+
+    }
+);
+
+
+/* =========================================================
+   RECEIVE NURSE MESSAGE
+   ========================================================= */
+
+socket.on(
+    "newNurseMessage",
+    function(data) {
+
+        if (
+            !data ||
+            !selectedChatPatient
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            String(data.patientId) !==
+            String(
+                selectedChatPatient.patientId
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        addPatientChatMessage(
+            data.message,
+            "nurse"
+        );
+
+    }
+);
+
+
+/* =========================================================
+   NURSE CALL - NURSE TO PATIENT
+   ========================================================= */
+
+function callSelectedPatient() {
+
+    if (!selectedChatPatient) {
+
+        alert(
+            "Please select a patient first."
+        );
+
+        return;
+
+    }
+
+
+    socket.emit(
+        "nurseCallRequest",
+        {
+
+            patientId:
+                selectedChatPatient.patientId,
+
+            nurse:
+                localStorage.getItem(
+                    "username"
+                ) || "Nurse",
+
+            timestamp:
+                new Date().toISOString()
+
+        }
+    );
+
+
+    addPatientChatMessage(
+        "Nurse requested a call with the patient.",
+        "system"
+    );
+
+}
+
+
+/* =========================================================
+   RECEIVE PATIENT CALL
+   ========================================================= */
+
+socket.on(
+    "patientCallRequest",
+    function(data) {
+
+        if (!data) {
+            return;
+        }
+
+
+        currentIncomingCall =
+            data;
+
+
+        const alertBox =
+            document.getElementById(
+                "callAlert"
+            );
+
+
+        const body =
+            document.getElementById(
+                "callAlertBody"
+            );
+
+
+        if (body) {
+
+            body.textContent =
+                "Patient " +
+                (
+                    data.patientName ||
+                    data.patientId ||
+                    "Unknown"
+                ) +
+                " is requesting assistance.";
+
+        }
+
+
+        if (alertBox) {
+
+            alertBox.classList.add(
+                "show"
+            );
+
+        }
+
+
+        const alarm =
+            document.getElementById(
+                "alarmSound"
+            );
+
+
+        if (alarm) {
+
+            alarm.play()
+                .catch(() => {});
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   ANSWER PATIENT CALL
+   ========================================================= */
+
+function answerPatientCall() {
+
+    if (!currentIncomingCall) {
+        return;
+    }
+
+
+    const patientId =
+        currentIncomingCall.patientId;
+
+
+    socket.emit(
+        "nurseCallAnswered",
+        {
+
+            patientId:
+                patientId,
+
+            nurse:
+                localStorage.getItem(
+                    "username"
+                ) || "Nurse",
+
+            timestamp:
+                new Date().toISOString()
+
+        }
+    );
+
+
+    const alertBox =
+        document.getElementById(
+            "callAlert"
+        );
+
+
+    if (alertBox) {
+
+        alertBox.classList.remove(
+            "show"
+        );
+
+    }
+
+
+    currentIncomingCall =
+        null;
+
+
+    /*
+       Open Patient Chat
+    */
+
+    openDashboardView(
+        "patients"
+    );
+
+
+    /*
+       Find patient after list loads
+    */
+
+    setTimeout(
+        function() {
+
+            const patient =
+                chatPatientsCache.find(
+                    item =>
+                        String(
+                            item.patientId
+                        ) ===
+                        String(
+                            patientId
+                        )
+                );
+
+
+            if (!patient) {
+                return;
+            }
+
+
+            const items =
+                document.querySelectorAll(
+                    "#chatPatientList .patient-chat-item"
+                );
+
+
+            const index =
+                chatPatientsCache.indexOf(
+                    patient
+                );
+
+
+            if (items[index]) {
+
+                selectChatPatient(
+                    patient,
+                    items[index]
+                );
+
+            }
+
+        },
+        500
+    );
+
+}
+
+
+/* =========================================================
+   DISMISS PATIENT CALL
+   ========================================================= */
+
+function dismissPatientCall() {
+
+    if (currentIncomingCall) {
+
+        socket.emit(
+            "nurseCallDismissed",
+            {
+
+                patientId:
+                    currentIncomingCall.patientId,
+
+                nurse:
+                    localStorage.getItem(
+                        "username"
+                    ) || "Nurse",
+
+                timestamp:
+                    new Date().toISOString()
+
+            }
+        );
+
+    }
+
+
+    const alertBox =
+        document.getElementById(
+            "callAlert"
+        );
+
+
+    if (alertBox) {
+
+        alertBox.classList.remove(
+            "show"
+        );
+
+    }
+
+
+    currentIncomingCall =
+        null;
+
+}
+
+
+/* =========================================================
+   SOCKET CONNECTION
+   ========================================================= */
+
+socket.on(
+    "connect",
+    function() {
+
+        console.log(
+            "🔌 Dashboard Socket connected:",
+            socket.id
+        );
+
+    }
+);
+
+
+socket.on(
+    "disconnect",
+    function() {
+
+        console.warn(
+            "⚠️ Dashboard Socket disconnected"
+        );
+
+
+        const status =
+            document.getElementById(
+                "patientChatStatus"
+            );
+
+
+        if (status) {
+
+            status.textContent =
+                "● Socket disconnected";
+
+            status.style.color =
+                "#dc2626";
+
+        }
+
+    }
+);
+
 </script>
+
+  <!-- ================= ADMIN ================= -->
+
+  <script>
+    if (localStorage.getItem("role") === "admin") {
+      window.open("admin.html", "_blank");
+    }
+  </script>
 
 </body>
 </html>

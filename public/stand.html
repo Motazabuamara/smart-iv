@@ -56,7 +56,6 @@ main {
   margin: 25px auto;
   padding: 0 25px;
 }
-
 /* ================= PATIENT HEADER ================= */
 
 .patient-header {
@@ -431,6 +430,13 @@ footer {
   border: 1px solid #dcecff;
 }
 
+.nurse-chat-card {
+  grid-column: auto;
+  margin-top: 18px;
+  background: white;
+  border: 1px solid #dcecff;
+}
+
 .chat-header {
   display: flex;
   align-items: center;
@@ -455,7 +461,7 @@ footer {
 }
 
 .chat-messages {
-  height: 260px;
+  height: 290px;
   overflow-y: auto;
   padding: 10px;
   background: #f7fbff;
@@ -551,6 +557,227 @@ footer {
     width: 100%;
   }
 }
+  
+
+
+
+/* ================= CHAT ROW ================= */
+
+.chat-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 18px;
+}
+
+.chat-row .chat-card,
+.chat-row .nurse-chat-card {
+  grid-column: auto;
+  width: 100%;
+  min-width: 0;
+  margin-top: 0;
+}
+
+/* ================= NURSE CHAT ================= */
+
+.nurse-chat-card {
+  grid-column: 1 / 3;
+  background: linear-gradient(135deg, #ffffff, #f7fbff);
+  border: 1px solid #dcecff;
+}
+
+.nurse-chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.nurse-chat-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nurse-chat-icon {
+  font-size: 28px;
+}
+
+.nurse-chat-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #102a43;
+}
+
+.nurse-chat-subtitle {
+  margin-top: 3px;
+  font-size: 13px;
+  color: #8a9aad;
+}
+
+.nurse-chat-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 20px;
+  background: #fff4e6;
+  color: #d97706;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.nurse-chat-status.online {
+  background: #e8fff4;
+  color: #08a66a;
+}
+
+.nurse-chat-messages {
+  height: 300px;
+  overflow-y: auto;
+  padding: 14px;
+  background: #f7fbff;
+  border: 1px solid #e5eef7;
+  border-radius: 16px;
+  margin-bottom: 12px;
+}
+
+.nurse-message {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.nurse-message.patient {
+  justify-content: flex-start;
+}
+
+.nurse-message.nurse {
+  justify-content: flex-end;
+}
+
+.nurse-message.system {
+  justify-content: center;
+}
+
+.nurse-message-bubble {
+  max-width: 78%;
+  padding: 11px 14px;
+  border-radius: 16px;
+  line-height: 1.5;
+  font-size: 15px;
+  word-break: break-word;
+  box-shadow: 0 2px 8px rgba(25, 80, 130, 0.06);
+}
+
+.nurse-message.patient .nurse-message-bubble {
+  background: white;
+  color: #102a43;
+  border-bottom-left-radius: 5px;
+}
+
+.nurse-message.nurse .nurse-message-bubble {
+  background: #168cff;
+  color: white;
+  border-bottom-right-radius: 5px;
+}
+
+.nurse-message.system .nurse-message-bubble {
+  background: #edf2f7;
+  color: #718096;
+  font-size: 13px;
+}
+
+.nurse-message-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.75;
+  margin-bottom: 3px;
+}
+
+.nurse-chat-input-area {
+  display: flex;
+  gap: 10px;
+}
+
+#nurseChatInput {
+  flex: 1;
+  height: 52px;
+  border: 1px solid #d7e4ef;
+  border-radius: 14px;
+  padding: 0 16px;
+  font-size: 16px;
+  outline: none;
+}
+
+#nurseChatInput:focus {
+  border-color: #168cff;
+}
+
+#nurseChatSendButton {
+  height: 52px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 14px;
+  background: #168cff;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#nurseChatSendButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nurse-call-button {
+  width: 100%;
+  margin-top: 10px;
+  height: 50px;
+  border: none;
+  border-radius: 14px;
+  background: #e03131;
+  color: white;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nurse-call-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 767px) {
+  .nurse-chat-card {
+    grid-column: 1;
+  }
+
+  .nurse-chat-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .nurse-chat-messages {
+    height: 260px;
+  }
+
+  .nurse-chat-input-area {
+    flex-direction: column;
+  }
+
+  #nurseChatSendButton {
+    width: 100%;
+  }
+}
+
+
+
+
+
   </style>
 </head>
 
@@ -764,7 +991,7 @@ footer {
 
     </div>
     <!-- ================= PATIENT AI CHAT ================= -->
-
+<div class="chat-row">
 <div class="card chat-card">
 
   <div class="chat-header">
@@ -812,15 +1039,80 @@ footer {
 
   </div>
 
+
 </div>
 
-  </main>
+<!-- ================= PATIENT ↔ NURSE CHAT ================= -->
+
+<div class="card nurse-chat-card">
+
+  <div class="nurse-chat-header">
+
+    <div class="nurse-chat-title-wrap">
+      <span class="nurse-chat-icon">👨‍⚕️</span>
+
+      <div>
+        <div class="nurse-chat-title">Contact Your Nurse</div>
+        <div class="nurse-chat-subtitle">
+          Direct real-time communication with your assigned nurse
+        </div>
+      </div>
+    </div>
+
+    <div id="nurseChatStatus" class="nurse-chat-status">
+      🟡 Connecting...
+    </div>
+
+  </div>
+
+  <div id="nurseChatMessages" class="nurse-chat-messages">
+    <div class="nurse-message system">
+      <div class="nurse-message-bubble">
+        💬 يمكنك التواصل مباشرة مع الممرض المسؤول عنك.
+      </div>
+    </div>
+  </div>
+
+  <div class="nurse-chat-input-area">
+    <input
+      type="text"
+      id="nurseChatInput"
+      placeholder="اكتب رسالتك للممرض..."
+      autocomplete="off"
+      disabled
+    >
+
+    <button
+      id="nurseChatSendButton"
+      type="button"
+      disabled
+    >
+      إرسال
+    </button>
+  </div>
+
+  <button
+    id="nurseCallButton"
+    class="nurse-call-button"
+    type="button"
+    disabled
+  >
+    📞 طلب الممرض
+  </button>
+
+</div>
+
+</div>
+
+</main>
 
 
   <footer>
     AI-Powered Intelligent IV Monitoring and Patient Care Platform
   </footer>
 
+
+<script src="/socket.io/socket.io.js"></script>
 
 <script>
 
@@ -833,6 +1125,12 @@ footer {
   document.getElementById("standDisplay").innerText =
     standId;
 
+
+  // Current patient assigned to this stand
+  let currentPatient = null;
+
+  // Socket.IO
+  const socket = io();
 
   // Load patient data
   async function loadStandPatient() {
@@ -884,6 +1182,8 @@ if (!response.ok) {
       const patient = await response.json();
 
 currentPatient = patient;
+
+      joinPatientNurseChat();
 
 
       // Hide waiting
@@ -1129,313 +1429,468 @@ async function updateAIPrediction(patientId) {
 
 }
 
-  // First load
-  loadStandPatient();
-
-
-  // Automatic update every 15 seconds
-  setInterval(
-    loadStandPatient,
-    15000
-  );
 
 
   // ================= PATIENT AI CHAT =================
 
-let currentPatient = null;
+  function addChatMessage(message, sender) {
 
+    const chatMessages = document.getElementById("chatMessages");
+    if (!chatMessages) return;
 
-// Add message to chat
-function addChatMessage(message, sender) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = "chat-message " + sender;
 
-  const chatMessages =
-    document.getElementById("chatMessages");
+    if (sender === "ai") {
+      messageDiv.innerHTML = `
+        <div class="message-avatar">🤖</div>
+        <div class="message-bubble"></div>
+      `;
+      messageDiv.querySelector(".message-bubble").innerHTML = message;
+    } else {
+      messageDiv.innerHTML = `<div class="message-bubble"></div>`;
+      messageDiv.querySelector(".message-bubble").textContent = message;
+    }
 
-  const messageDiv =
-    document.createElement("div");
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
 
-  messageDiv.className =
-    "chat-message " + sender;
+  function getPatientAIResponse(question) {
 
+    const q = question.toLowerCase().trim();
 
-  if (sender === "ai") {
+    if (!currentPatient) {
+      return "⚠️ لا توجد بيانات مريض متاحة حالياً.";
+    }
 
-    messageDiv.innerHTML = `
-      <div class="message-avatar">🤖</div>
+    if (q.includes("ممرض") || q.includes("الممرض") || q.includes("nurse")) {
+      return `👨‍⚕️ الممرض المسؤول عن متابعتك هو: <strong>${currentPatient.nurse || "غير متوفر حالياً"}</strong>`;
+    }
 
-      <div class="message-bubble">
-        ${message}
-      </div>
-    `;
+    if (q.includes("باقي") || q.includes("متبقي") || q.includes("remaining")) {
+      return `💧 المتبقي من المحلول: <strong>${Number(currentPatient.remainingML || 0).toFixed(2)} ml</strong>`;
+    }
 
-  } else {
+    if (q.includes("نسبة") || q.includes("percentage") || q.includes("%")) {
+      return `📊 نسبة المحلول المتبقية: <strong>${Math.round(currentPatient.percentage || 0)}%</strong>`;
+    }
 
-    messageDiv.innerHTML = `
-      <div class="message-bubble">
-        ${message}
-      </div>
+    if (q.includes("سرير") || q.includes("تخت") || q.includes("bed")) {
+      return `🛏️ رقم سريرك هو: <strong>${currentPatient.bed || currentPatient.room || "-"}</strong>`;
+    }
+
+    if (q.includes("نوع المحلول") || q.includes("المحلول") || q.includes("fluid")) {
+      return `💧 المحلول المستخدم حالياً: <strong>${currentPatient.fluid || "غير متوفر"}</strong>`;
+    }
+
+    if (q.includes("حالة") || q.includes("طبيعي") || q.includes("status")) {
+      return `🩺 حالة المحلول حالياً: <strong>${currentPatient.status || "غير معروف"}</strong>`;
+    }
+
+    if (q.includes("اسمي") || q.includes("my name")) {
+      return `👤 اسم المريض المسجل هو: <strong>${currentPatient.name || "-"}</strong>`;
+    }
+
+    if (q.includes("متى") || q.includes("يخلص") || q.includes("ينتهي") || q.includes("وقت")) {
+      const prediction = document.getElementById("aiPrediction");
+      return `⏱️ ${prediction ? prediction.innerText.replace("🤖 ", "") : "الوقت المتوقع غير متوفر حالياً."}`;
+    }
+
+    return `
+      🤖 أستطيع مساعدتك في معرفة:
+      <br><br>
+      • اسم الممرض المسؤول عنك 👨‍⚕️<br>
+      • كمية المحلول المتبقية 💧<br>
+      • نسبة المحلول 📊<br>
+      • رقم السرير 🛏️<br>
+      • حالة المحلول 🩺<br>
+      • الوقت المتوقع لانتهاء المحلول ⏱️
     `;
   }
 
+  async function sendChatMessage() {
 
-  chatMessages.appendChild(messageDiv);
+    const input = document.getElementById("chatInput");
+    if (!input) return;
 
-  chatMessages.scrollTop =
-    chatMessages.scrollHeight;
+    const question = input.value.trim();
+
+    if (!question) return;
+
+    // عرض سؤال المريض
+    addChatMessage(question, "user");
+
+    // تفريغ صندوق الكتابة
+    input.value = "";
+
+    // رسالة مؤقتة
+    addChatMessage("🤖 جاري التفكير...", "ai");
+
+    try {
+
+        const response = await fetch("/api/ai/chat", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+
+body: JSON.stringify({
+
+    question: question,
+
+    mode: "patient",
+
+    patient: currentPatient,
+
+    estimatedTime:
+        document.getElementById("aiPrediction")?.innerText || ""
+
+})
+
+        });
+
+        const data = await response.json();
+
+        // حذف "جاري التفكير..."
+        const messages =
+            document.getElementById("chatMessages");
+
+        const lastMessage =
+            messages?.lastElementChild;
+
+        if (
+            lastMessage &&
+            lastMessage.classList.contains("ai")
+        ) {
+            lastMessage.remove();
+        }
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "AI error"
+            );
+        }
+
+        // عرض جواب AI الحقيقي
+        addChatMessage(
+            data.answer,
+            "ai"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "❌ Stand AI Error:",
+            error
+        );
+
+        const messages =
+            document.getElementById("chatMessages");
+
+        const lastMessage =
+            messages?.lastElementChild;
+
+        if (
+            lastMessage &&
+            lastMessage.classList.contains("ai")
+        ) {
+            lastMessage.remove();
+        }
+
+        addChatMessage(
+            "⚠️ عذرًا، المساعد الذكي غير متاح حاليًا. حاول مرة أخرى.",
+            "ai"
+        );
+    }
 }
 
 
-// Generate local Smart IV response
-function getPatientAIResponse(question) {
+  // ================= PATIENT ↔ NURSE CHAT =================
 
-  const q =
-    question.toLowerCase().trim();
+  let nurseChatConnected = false;
 
+  function setNurseChatState(online) {
 
-  if (!currentPatient) {
+    nurseChatConnected = online;
 
-    return "⚠️ لا توجد بيانات مريض متاحة حالياً.";
+    const status = document.getElementById("nurseChatStatus");
+    const input = document.getElementById("nurseChatInput");
+    const sendButton = document.getElementById("nurseChatSendButton");
+    const callButton = document.getElementById("nurseCallButton");
+
+    if (status) {
+      status.classList.toggle("online", online);
+      status.textContent = online ? "🟢 Connected" : "🔴 Disconnected";
+    }
+
+    const enabled = online && !!currentPatient;
+
+    if (input) input.disabled = !enabled;
+    if (sendButton) sendButton.disabled = !enabled;
+    if (callButton) callButton.disabled = !enabled;
   }
 
+  function addNurseMessage(message, sender, label) {
 
-  // Nurse question
-  if (
-    q.includes("ممرض") ||
-    q.includes("الممرض") ||
-    q.includes("nurse")
-  ) {
+    const container = document.getElementById("nurseChatMessages");
+    if (!container) return;
 
-    return `
-      👨‍⚕️ الممرض المسؤول عن متابعتك هو:
-      <strong>${currentPatient.nurse || "غير متوفر حالياً"}</strong>
-    `;
+    const row = document.createElement("div");
+    row.className = "nurse-message " + sender;
+
+    const bubble = document.createElement("div");
+    bubble.className = "nurse-message-bubble";
+
+    if (label) {
+      const labelEl = document.createElement("span");
+      labelEl.className = "nurse-message-label";
+      labelEl.textContent = label;
+      bubble.appendChild(labelEl);
+    }
+
+    const text = document.createElement("div");
+    text.textContent = message;
+    bubble.appendChild(text);
+
+    row.appendChild(bubble);
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
   }
 
-
-  // Remaining fluid
-  if (
-    q.includes("باقي") ||
-    q.includes("متبقي") ||
-    q.includes("remaining")
-  ) {
-
-    return `
-      💧 المتبقي من المحلول:
-      <strong>${Number(currentPatient.remainingML || 0).toFixed(2)} ml</strong>
-    `;
+  function clearNurseChat() {
+    const container = document.getElementById("nurseChatMessages");
+    if (!container) return;
+    container.innerHTML = "";
+    addNurseMessage(
+      "أنت الآن متصل بالممرض المسؤول عنك. يمكنك إرسال رسالتك مباشرة.",
+      "system"
+    );
   }
 
+ function joinPatientNurseChat() {
 
-  // Percentage
-  if (
-    q.includes("نسبة") ||
-    q.includes("percentage") ||
-    q.includes("%")
-  ) {
-
-    return `
-      📊 نسبة المحلول المتبقية:
-      <strong>${Math.round(currentPatient.percentage || 0)}%</strong>
-    `;
-  }
-
-
-  // Bed
-  if (
-    q.includes("سرير") ||
-    q.includes("تخت") ||
-    q.includes("bed")
-  ) {
-
-    return `
-      🛏️ رقم سريرك هو:
-      <strong>${currentPatient.bed || currentPatient.room || "-"}</strong>
-    `;
-  }
-
-
-  // IV fluid
-  if (
-    q.includes("نوع المحلول") ||
-    q.includes("المحلول") ||
-    q.includes("fluid")
-  ) {
-
-    return `
-      💧 المحلول المستخدم حالياً:
-      <strong>${currentPatient.fluid || "غير متوفر"}</strong>
-    `;
-  }
-
-
-  // Status
-  if (
-    q.includes("حالة") ||
-    q.includes("طبيعي") ||
-    q.includes("status")
-  ) {
-
-    return `
-      🩺 حالة المحلول حالياً:
-      <strong>${currentPatient.status || "غير معروف"}</strong>
-    `;
-  }
-
-
-  // Patient name
-  if (
-    q.includes("اسمي") ||
-    q.includes("my name")
-  ) {
-
-    return `
-      👤 اسم المريض المسجل هو:
-      <strong>${currentPatient.name || "-"}</strong>
-    `;
-  }
-
-
-  // Estimated time
-  if (
-    q.includes("متى") ||
-    q.includes("يخلص") ||
-    q.includes("ينتهي") ||
-    q.includes("وقت")
-  ) {
-
-    const prediction =
-      document
-        .getElementById("aiPrediction")
-        .innerText;
-
-    return `
-      ⏱️ ${prediction.replace("🤖 ", "")}
-    `;
-  }
-
-
-  return `
-    🤖 أستطيع مساعدتك في معرفة:
-    <br><br>
-    • اسم الممرض المسؤول عنك 👨‍⚕️
-    <br>
-    • كمية المحلول المتبقية 💧
-    <br>
-    • نسبة المحلول 📊
-    <br>
-    • رقم السرير 🛏️
-    <br>
-    • حالة المحلول 🩺
-    <br>
-    • الوقت المتوقع لانتهاء المحلول ⏱️
-  `;
-}
-
-
-// Send chat message
-// ================= SEND CHAT MESSAGE TO LOCAL QWEN =================
-
-async function sendChatMessage() {
-
-  const input = document.getElementById("chatInput");
-  const question = input.value.trim();
-
-  if (!question) {
+  if (!currentPatient || !currentPatient.patientId) {
+    console.log("⏳ Patient not ready yet...");
     return;
   }
 
-  // Show user's message
-  addChatMessage(question, "user");
+  console.log(
+    "💬 Joining patient chat:",
+    currentPatient.patientId
+  );
 
-  input.value = "";
+  socket.emit("joinPatientChat", {
+    patientId: currentPatient.patientId,
+    standId: standId
+  });
 
-  // Temporary message
-  addChatMessage("🤖 جاري التفكير...", "ai");
+  setNurseChatState(true);
+}
 
-  try {
 
-    const response = await fetch("/api/ai/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-  question: question,
-  patient: currentPatient,
-  estimatedTime: document.getElementById("aiPrediction")?.innerText || ""
-})
+
+  function sendNurseMessage() {
+
+    if (!currentPatient || !currentPatient.patientId) {
+      addNurseMessage("⚠️ لم يتم تحميل بيانات المريض بعد.", "system");
+      return;
+    }
+
+    if (!nurseChatConnected) {
+      addNurseMessage("🔴 الاتصال بالممرض غير متاح حالياً.", "system");
+      return;
+    }
+
+    const input = document.getElementById("nurseChatInput");
+    if (!input) return;
+
+    const message = input.value.trim();
+    if (!message) return;
+
+    socket.emit("patientMessage", {
+      patientId: currentPatient.patientId,
+      standId: standId,
+      message: message
     });
 
-    const data = await response.json();
-
-    // Remove temporary message
-    const messages = document.getElementById("chatMessages");
-    const lastMessage = messages.lastElementChild;
-
-    if (
-      lastMessage &&
-      lastMessage.classList.contains("ai")
-    ) {
-      lastMessage.remove();
-    }
-
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || "AI error");
-    }
-
-    // Show AI response
-    addChatMessage(data.answer, "ai");
-
-  } catch (error) {
-
-    console.error("❌ Chat AI Error:", error);
-
-    const messages = document.getElementById("chatMessages");
-    const lastMessage = messages.lastElementChild;
-
-    if (
-      lastMessage &&
-      lastMessage.classList.contains("ai")
-    ) {
-      lastMessage.remove();
-    }
-
-    addChatMessage(
-      "⚠️ عذرًا، المساعد غير متاح حاليًا. حاول مرة أخرى.",
-      "ai"
-    );
+    input.value = "";
+    input.focus();
   }
-}
-// Send button
-document
-  .getElementById("chatSendButton")
-  .addEventListener(
-    "click",
-    sendChatMessage
-  );
 
+  // Socket connection
+  socket.on("connect", () => {
+    console.log("💬 Patient chat connected:", socket.id);
+    setNurseChatState(true);
+    joinPatientNurseChat();
+  });
 
-// Enter key
-document
-  .getElementById("chatInput")
-  .addEventListener(
-    "keydown",
-    function(event) {
+  socket.on("disconnect", () => {
+    console.warn("💬 Patient chat disconnected");
+    setNurseChatState(false);
+  });
 
-      if (event.key === "Enter") {
+  // ================= CHAT HISTORY =================
 
-        sendChatMessage();
+socket.on("chatHistory", (messages) => {
+  if (!Array.isArray(messages)) return;
+  if (!currentPatient || !currentPatient.patientId) return;
 
-      }
+  console.log("💬 Chat history received:", messages);
+
+  // امسح الرسائل القديمة من الشاشة
+  const chatBox = document.getElementById("nurseChatMessages");
+
+  if (chatBox) {
+    chatBox.innerHTML = "";
+  }
+
+  messages.forEach((data) => {
+
+    if (!data || !data.message) return;
+
+    if (
+      String(data.patientId) !==
+      String(currentPatient.patientId)
+    ) {
+      return;
+    }
+
+    if (data.sender === "patient") {
+
+      addNurseMessage(
+        data.message,
+        "patient",
+        "You"
+      );
+
+    } else if (data.sender === "nurse") {
+
+      addNurseMessage(
+        data.message,
+        "nurse",
+        "👨‍⚕️ Nurse"
+      );
 
     }
+
+  });
+});
+
+
+// ================= NEW PATIENT MESSAGE =================
+
+socket.on("newPatientMessage", (data) => {
+
+  if (!data || !currentPatient) return;
+
+  if (
+    String(data.patientId) !==
+    String(currentPatient.patientId)
+  ) {
+    return;
+  }
+
+  if (data.sender === "patient") {
+
+    addNurseMessage(
+      data.message,
+      "patient",
+      "You"
+    );
+
+  }
+
+});
+
+
+// ================= NEW NURSE MESSAGE =================
+
+socket.on("newNurseMessage", (data) => {
+
+  if (!data || !currentPatient) return;
+
+  if (
+    String(data.patientId) !==
+    String(currentPatient.patientId)
+  ) {
+    return;
+  }
+
+  addNurseMessage(
+    data.message,
+    "nurse",
+    "👨‍⚕️ Nurse"
   );
+
+});
+
+
+  // Nurse call request
+  function callNurse() {
+
+    if (!currentPatient || !currentPatient.patientId) return;
+    if (!nurseChatConnected) return;
+
+    const button = document.getElementById("nurseCallButton");
+    if (!button) return;
+
+    socket.emit("nurseCallRequest", {
+      patientId: currentPatient.patientId,
+      patientName: currentPatient.name || "Patient",
+      room: currentPatient.room || currentPatient.bed || "-",
+      standId: standId,
+      reason: "Patient requested nurse assistance"
+    });
+
+    button.disabled = true;
+    button.textContent = "🔔 تم طلب الممرض";
+
+    addNurseMessage(
+      "🔔 تم إرسال طلب للممرض المسؤول عنك.",
+      "system"
+    );
+
+    setTimeout(() => {
+      if (button) {
+        button.disabled = !nurseChatConnected || !currentPatient;
+        button.textContent = "📞 طلب الممرض";
+      }
+    }, 15000);
+  }
+
+  // Wire buttons
+  document.getElementById("chatSendButton")?.addEventListener("click", sendChatMessage);
+
+  document.getElementById("chatInput")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      sendChatMessage();
+    }
+  });
+
+  document.getElementById("nurseChatSendButton")?.addEventListener("click", sendNurseMessage);
+
+  document.getElementById("nurseChatInput")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      sendNurseMessage();
+    }
+  });
+
+  document.getElementById("nurseCallButton")?.addEventListener("click", callNurse);
+
+  // Start
+  loadStandPatient();
+
+  // Automatic update every 15 seconds
+  setInterval(loadStandPatient, 15000);
+
 
 </script>
-
-
-
-
 
 </body>
 </html>

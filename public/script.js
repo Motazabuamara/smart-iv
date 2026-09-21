@@ -77,13 +77,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // 🟢 LOGIN FLOW
       if (data.token && !window.isResetFlow) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("role", data.role);
-        localStorage.setItem("nurse", window.currentUser);
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("role", data.role);
+    localStorage.setItem("nurse", window.currentUser);
 
-        window.location.href = "dashboard.html";
-        return;
-      }
+    // 👑 ADMIN
+    if (data.role === "admin") {
+        window.open("admin.html", "_blank");
+    }
+
+    // الجميع يدخل Dashboard
+    window.location.href = "dashboard.html";
+    return;
+}
 
       // 🟡 RESET FLOW
       if (window.isResetFlow) {

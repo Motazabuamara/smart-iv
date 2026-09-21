@@ -578,3 +578,36 @@ body {
 .otp-box span:hover {
   color: red;
 }
+
+
+
+/* ================= OTP / FORGOT MODAL FIX ================= */
+
+.otp-modal {
+    position: fixed !important;
+    inset: 0 !important;
+
+    display: none;
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 100vw !important;
+    height: 100vh !important;
+
+    background: rgba(0, 0, 0, 0.45) !important;
+
+    z-index: 99999 !important;
+}
+
+.otp-box {
+    position: relative !important;
+    z-index: 100000 !important;
+
+    width: min(420px, 90%) !important;
+    background: white !important;
+
+    padding: 30px !important;
+    border-radius: 20px !important;
+
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25) !important;
+}

@@ -1968,6 +1968,16 @@ socket.on("newNurseMessage", (data) => {
 
     updateAIPredictionIfNeeded(currentPatient.patientId);
 
+
+
+setInterval(() => {
+    if (currentPatient && currentPatient.patientId) {
+        console.log("🤖 Refreshing AI prediction...");
+        updateAIPrediction(currentPatient.patientId);
+    }
+}, 60000);
+
+
     // Last update
     document.getElementById("lastUpdate").innerText =
         "Last update: " +

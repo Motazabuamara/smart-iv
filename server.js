@@ -312,7 +312,7 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
       patientId: patientId
     })
       .sort({ timestamp: -1 })
-      .limit(3);
+      .limit(5);
 
     if (readings.length < 2) {
       return res.json({
@@ -328,27 +328,48 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
     // Previous reading
     const previous = readings[1];
 
-    // Calculate consumption rate
-    const weightDifference =
-      previous.weight - latest.weight;
+   // Calculate average consumption rate from last 5 readings
+let consumptionRates = [];
 
-    const timeDifference =
-      (latest.timestamp - previous.timestamp) / 60000;
+for (let i = 0; i < readings.length - 1; i++) {
 
-    let consumptionRate = 0;
+  const newer = readings[i];
+  const older = readings[i + 1];
 
-    if (
-      weightDifference > 0 &&
-      timeDifference > 0
-    ) {
-      consumptionRate =
-        weightDifference / timeDifference;
-    }
+  const weightDifference =
+    older.weight - newer.weight;
+
+  const timeDifference =
+    (newer.timestamp - older.timestamp) / 60000;
+
+  if (
+    weightDifference > 0 &&
+    timeDifference > 0
+  ) {
+    const rate =
+      weightDifference / timeDifference;
+
+    consumptionRates.push(rate);
+  }
+}
+
+let consumptionRate = 0;
+
+if (consumptionRates.length > 0) {
+
+  const sum = consumptionRates.reduce(
+    (total, rate) => total + rate,
+    0
+  );
+
+  consumptionRate =
+    sum / consumptionRates.length;
+}
 
     // Calculate rate change
     let rateChange = 0;
 
-    if (readings.length >= 3) {
+    if (readings.length >= 5) {
 
       const older = readings[2];
 

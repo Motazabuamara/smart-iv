@@ -1334,6 +1334,34 @@ catch (error) {
 
 
 
+
+let lastAIPredictionUpdate = 0;
+const AI_UPDATE_INTERVAL = 180000; // كل دقيقة
+
+async function updateAIPredictionIfNeeded(patientId) {
+    if (!patientId) return;
+
+    const now = Date.now();
+
+    if (now - lastAIPredictionUpdate < AI_UPDATE_INTERVAL) {
+        return;
+    }
+
+    lastAIPredictionUpdate = now;
+
+    await updateAIPrediction(patientId);
+}
+
+
+
+
+
+
+
+
+
+
+
 // ================= AI PREDICTION =================
 
 async function updateAIPrediction(patientId) {
@@ -1937,6 +1965,8 @@ socket.on("newNurseMessage", (data) => {
 
     // AI monitoring
     updateAI(percentage);
+
+    updateAIPredictionIfNeeded(currentPatient.patientId);
 
     // Last update
     document.getElementById("lastUpdate").innerText =

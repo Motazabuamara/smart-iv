@@ -281,6 +281,7 @@ async function trainAIModel() {
 
 
 // ================= AI PREDICTION API =================
+// ================= AI PREDICTION API =================
 
 app.get("/api/ai/predict/:patientId", async (req, res) => {
 
@@ -307,136 +308,163 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
       });
     }
 
-    // Get latest sensor readings
+    // Get latest 10 sensor readings
     const readings = await SensorReading.find({
       patientId: patientId
     })
       .sort({ timestamp: -1 })
-      .limit(5);
+      .limit(10);
 
-    if (readings.length < 2) {
+    // Need at least 10 readings
+    if (readings.length < 10) {
       return res.json({
         success: true,
         predictionAvailable: false,
-        message: "Not enough sensor data for AI prediction"
+        message: `Collecting sensor data... ${readings.length}/10 readings`
       });
     }
 
-    // Latest reading
-    const latest = readings[0];
+    /*
+      readings are sorted newest -> oldest
 
-    // Previous reading
-    const previous = readings[1];
+      readings[0] = newest
+      readings[9] = oldest
+    */
 
-   // Calculate average consumption rate from last 5 readings
-let consumptionRates = [];
+    // ================================
+    // Calculate average of OLD 5
+    // ================================
 
-for (let i = 0; i < readings.length - 1; i++) {
+    const oldReadings = readings.slice(5, 10);
 
-  const newer = readings[i];
-  const older = readings[i + 1];
+    const oldAverage =
+      oldReadings.reduce(
+        (sum, reading) => sum + Number(reading.weight || 0),
+        0
+      ) / oldReadings.length;
 
-  const weightDifference =
-    older.weight - newer.weight;
 
-  const timeDifference =
-    (newer.timestamp - older.timestamp) / 60000;
+    // ================================
+    // Calculate average of NEW 5
+    // ================================
 
-  if (
-    weightDifference > 0 &&
-    timeDifference > 0
-  ) {
-    const rate =
-      weightDifference / timeDifference;
+    const newReadings = readings.slice(0, 5);
 
-    consumptionRates.push(rate);
-  }
-}
+    const newAverage =
+      newReadings.reduce(
+        (sum, reading) => sum + Number(reading.weight || 0),
+        0
+      ) / newReadings.length;
 
-let consumptionRate = 0;
 
-if (consumptionRates.length > 0) {
+    // ================================
+    // Calculate time between averages
+    // ================================
 
-  const sum = consumptionRates.reduce(
-    (total, rate) => total + rate,
-    0
-  );
+    const newestTime = readings[0].timestamp;
+    const oldestTime = readings[9].timestamp;
 
-  consumptionRate =
-    sum / consumptionRates.length;
-}
+    const timeDifference =
+      (newestTime - oldestTime) / 60000;
 
-    // Calculate rate change
-    let rateChange = 0;
 
-    if (readings.length >= 5) {
+    // ================================
+    // Calculate consumption rate
+    // ================================
 
-      const older = readings[2];
+    let consumptionRate = 0;
 
-      const previousWeightDifference =
-        older.weight - previous.weight;
+    const weightDifference =
+      oldAverage - newAverage;
 
-      const previousTimeDifference =
-        (previous.timestamp - older.timestamp) / 60000;
-
-      if (
-        previousWeightDifference > 0 &&
-        previousTimeDifference > 0
-      ) {
-
-        const previousRate =
-          previousWeightDifference /
-          previousTimeDifference;
-
-        rateChange =
-          consumptionRate - previousRate;
-
-      }
-
+    if (
+      weightDifference > 0 &&
+      timeDifference > 0
+    ) {
+      consumptionRate =
+        weightDifference / timeDifference;
     }
 
-    // Time interval in minutes
-    const timeInterval =
-      timeDifference > 0
-        ? timeDifference
-        : 1;
 
+    // ================================
+    // Rate change
+    // ================================
+
+    let rateChange = 0;
+
+
+    // ================================
     // AI input
-   const aiInput = [[
+    // ================================
 
-  Number(patient.totalML || 0),
+    const aiInput = [[
 
-  Number(patient.remainingML || 0),
+      Number(patient.totalML || 0),
 
-  Number(patient.percentage || 0),
+      Number(patient.remainingML || 0),
 
-  Number(consumptionRate || 0),
+      Number(patient.percentage || 0),
 
-  Number(rateChange || 0),
+      Number(consumptionRate || 0),
 
-  Number(timeInterval || 0)
+      Number(rateChange || 0),
 
-]];
+      Number(timeDifference || 0)
+
+    ]];
 
     console.log("🤖 AI Prediction Input:", aiInput);
 
-    // Run prediction
-const prediction =
-  aiModel.predict(aiInput);
+    console.log("📊 Old Average:", oldAverage);
 
-let predictedRemainingTime =
-  Number(prediction[0]);
+    console.log("📊 New Average:", newAverage);
 
-// If IV is empty, remaining time must be zero
-if (Number(patient.remainingML || 0) <= 0) {
-  predictedRemainingTime = 0;
-}
+    console.log("📉 Weight Difference:", weightDifference);
 
-console.log(
-  "🤖 AI Predicted Time:",
-  predictedRemainingTime,
-  "minutes"
-);
+    console.log("⏱️ Time Difference:", timeDifference);
+
+    console.log("💧 Consumption Rate:", consumptionRate);
+
+
+    // ================================
+    // Run AI prediction
+    // ================================
+
+    const prediction =
+      aiModel.predict(aiInput);
+
+    let predictedRemainingTime =
+      Number(prediction[0]);
+
+
+    // If IV is empty
+    if (
+      Number(patient.remainingML || 0) <= 0
+    ) {
+      predictedRemainingTime = 0;
+    }
+
+
+    // Prevent invalid predictions
+    if (
+      !Number.isFinite(predictedRemainingTime) ||
+      predictedRemainingTime < 0
+    ) {
+      predictedRemainingTime = 0;
+    }
+
+
+    console.log(
+      "🤖 AI Predicted Time:",
+      predictedRemainingTime,
+      "minutes"
+    );
+
+
+    // ================================
+    // Send response
+    // ================================
+
     res.json({
 
       success: true,

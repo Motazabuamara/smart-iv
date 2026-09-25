@@ -1886,8 +1886,70 @@ socket.on("newNurseMessage", (data) => {
   // Start
   loadStandPatient();
 
-  // Automatic update every 15 seconds
-  setInterval(loadStandPatient, 15000);
+  socket.on("patientUpdated", (data) => {
+
+    if (!data || !currentPatient) return;
+
+    if (
+        String(data.patientId) !==
+        String(currentPatient.patientId)
+    ) {
+        return;
+    }
+
+    // تحديث البيانات الحالية
+    currentPatient.remainingML =
+        Number(data.remainingML || 0);
+
+    currentPatient.percentage =
+        Number(data.percentage || 0);
+
+    currentPatient.status =
+        data.status || "Unknown";
+
+    // Remaining
+    document.getElementById("remaining").innerText =
+        currentPatient.remainingML.toFixed(2);
+
+    // Percentage
+    const percentage =
+        Math.max(
+            0,
+            Math.min(
+                100,
+                currentPatient.percentage
+            )
+        );
+
+    document.getElementById("percentage").innerText =
+        Math.round(percentage);
+
+    // Status
+    document.getElementById("status").innerText =
+        currentPatient.status;
+
+    // Progress
+    document.getElementById("progressBar").style.width =
+        percentage + "%";
+
+    document.getElementById("progressText").innerText =
+        Math.round(percentage) + "%";
+
+    // AI monitoring
+    updateAI(percentage);
+
+    // Last update
+    document.getElementById("lastUpdate").innerText =
+        "Last update: " +
+        new Date().toLocaleTimeString();
+
+    console.log(
+        "⚡ Live Stand Update:",
+        currentPatient.remainingML,
+        "ml"
+    );
+});
+  
 
 
 </script>

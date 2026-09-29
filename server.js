@@ -279,6 +279,8 @@ async function trainAIModel() {
 
 }
 
+
+
 // ================= AI PREDICTION API =================
 
 app.get("/api/ai/predict/:patientId", async (req, res) => {
@@ -294,8 +296,7 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
 
     const patientId = req.params.patientId;
 
-    // ================= GET PATIENT =================
-
+    // Get patient
     const patient = await Patient.findOne({
       patientId: patientId
     });
@@ -307,143 +308,82 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
       });
     }
 
-
-    // ================= GET LAST 120 READINGS =================
-    // 120 readings ≈ 2 minutes
-    // 60 readings = old minute
-    // 60 readings = new minute
+    // =====================================================
+    // Get latest 60 sensor readings
+    // =====================================================
 
     const readings = await SensorReading.find({
       patientId: patientId
     })
       .sort({ timestamp: -1 })
-      .limit(120);
+      .limit(60);
 
-
-    // Need 120 readings
-    if (readings.length < 120) {
-
+    if (readings.length < 5) {
       return res.json({
         success: true,
         predictionAvailable: false,
-        message:
-          `Collecting sensor data... ${readings.length}/120 readings`
+        message: "Not enough sensor data for AI prediction"
       });
-
     }
 
+    // Reverse so readings go from OLD -> NEW
+    const orderedReadings = [...readings].reverse();
 
-    // ================= SPLIT INTO 2 MINUTES =================
+    // =====================================================
+    // Remove readings that go UP
+    // We only want real fluid decrease
+    // =====================================================
 
-    // readings are newest -> oldest
+    const cleanReadings = [];
 
-    const newMinute = readings
-      .slice(0, 60)
-      .reverse();
+    for (let i = 0; i < orderedReadings.length; i++) {
 
-    const oldMinute = readings
-      .slice(60, 120)
-      .reverse();
+      const current = orderedReadings[i];
 
-
-    // ========================================================
-    // FILTER FUNCTION
-    // Remove readings that go UP compared to previous reading
-    // because IV liquid should normally decrease
-    // ========================================================
-
-    function cleanReadings(readingsArray) {
-
-      if (!readingsArray.length) {
-        return [];
+      if (cleanReadings.length === 0) {
+        cleanReadings.push(current);
+        continue;
       }
 
-      const cleaned = [];
+      const previous =
+        cleanReadings[cleanReadings.length - 1];
 
-      // Always keep first reading
-      cleaned.push(readingsArray[0]);
-
-      for (let i = 1; i < readingsArray.length; i++) {
-
-        const previous =
-          Number(cleaned[cleaned.length - 1].weight);
-
-        const current =
-          Number(readingsArray[i].weight);
-
-        // If current reading is higher than previous,
-        // treat it as sensor fluctuation and remove it.
-
-        if (current > previous) {
-
-          console.log(
-            "🗑️ Removed fluctuation:",
-            current,
-            ">",
-            previous
-          );
-
-          continue;
-        }
-
-        cleaned.push(readingsArray[i]);
+      // If current weight is lower or equal,
+      // this represents real fluid consumption.
+      if (current.weight <= previous.weight) {
+        cleanReadings.push(current);
       }
 
-      return cleaned;
+      // If current.weight > previous.weight,
+      // ignore it because it is sensor fluctuation.
     }
 
-
-    // ================= CLEAN BOTH MINUTES =================
-
-    const cleanOld = cleanReadings(oldMinute);
-
-    const cleanNew = cleanReadings(newMinute);
-
-
-    // ================= CALCULATE AVERAGES =================
-
-    function calculateAverage(readingsArray) {
-
-      if (!readingsArray.length) {
-        return 0;
-      }
-
-      const sum = readingsArray.reduce(
-        (total, reading) =>
-          total + Number(reading.weight || 0),
-        0
-      );
-
-      return sum / readingsArray.length;
+    // Need enough clean readings
+    if (cleanReadings.length < 5) {
+      return res.json({
+        success: true,
+        predictionAvailable: false,
+        message: "Not enough stable sensor readings"
+      });
     }
 
+    // =====================================================
+    // Calculate consumption using clean readings
+    // =====================================================
 
-    const oldAverage =
-      calculateAverage(cleanOld);
+    const firstReading =
+      cleanReadings[0];
 
-    const newAverage =
-      calculateAverage(cleanNew);
-
-
-    // ================= TIME DIFFERENCE =================
-
-    const oldStart =
-      oldMinute[0].timestamp;
-
-    const newEnd =
-      newMinute[newMinute.length - 1].timestamp;
-
-    const timeDifference =
-      (newEnd - oldStart) / 60000;
-
-
-    // ================= WEIGHT DIFFERENCE =================
+    const lastReading =
+      cleanReadings[cleanReadings.length - 1];
 
     const weightDifference =
-      oldAverage - newAverage;
+      firstReading.weight -
+      lastReading.weight;
 
-
-    // ================= CONSUMPTION RATE =================
+    const timeDifference =
+      (lastReading.timestamp -
+        firstReading.timestamp) / 60000;
 
     let consumptionRate = 0;
 
@@ -451,19 +391,86 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
       weightDifference > 0 &&
       timeDifference > 0
     ) {
-
       consumptionRate =
-        weightDifference / timeDifference;
-
+        weightDifference /
+        timeDifference;
     }
 
+    // =====================================================
+    // Prevent crazy rates caused by sensor noise
+    // =====================================================
 
-    // ================= RATE CHANGE =================
+    if (
+      !Number.isFinite(consumptionRate) ||
+      consumptionRate < 0
+    ) {
+      consumptionRate = 0;
+    }
+
+    // =====================================================
+    // Calculate rate change
+    // =====================================================
 
     let rateChange = 0;
 
+    if (cleanReadings.length >= 10) {
 
-    // ================= AI INPUT =================
+      const middleIndex =
+        Math.floor(cleanReadings.length / 2);
+
+      const middleReading =
+        cleanReadings[middleIndex];
+
+      const firstHalfWeight =
+        firstReading.weight -
+        middleReading.weight;
+
+      const firstHalfTime =
+        (middleReading.timestamp -
+          firstReading.timestamp) / 60000;
+
+      const secondHalfWeight =
+        middleReading.weight -
+        lastReading.weight;
+
+      const secondHalfTime =
+        (lastReading.timestamp -
+          middleReading.timestamp) / 60000;
+
+      let firstRate = 0;
+      let secondRate = 0;
+
+      if (
+        firstHalfWeight > 0 &&
+        firstHalfTime > 0
+      ) {
+        firstRate =
+          firstHalfWeight /
+          firstHalfTime;
+      }
+
+      if (
+        secondHalfWeight > 0 &&
+        secondHalfTime > 0
+      ) {
+        secondRate =
+          secondHalfWeight /
+          secondHalfTime;
+      }
+
+      rateChange =
+        secondRate -
+        firstRate;
+    }
+
+    // =====================================================
+    // AI INPUT
+    // =====================================================
+
+    const timeInterval =
+      timeDifference > 0
+        ? timeDifference
+        : 1;
 
     const aiInput = [[
 
@@ -477,71 +484,43 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
 
       Number(rateChange || 0),
 
-      Number(timeDifference || 0)
+      Number(timeInterval || 0)
 
     ]];
 
-
-    console.log("================================");
-
-    console.log("🤖 AI PREDICTION");
-
     console.log(
-      "📊 Old readings:",
-      oldMinute.length
-    );
-
-    console.log(
-      "🧹 Old after filtering:",
-      cleanOld.length
-    );
-
-    console.log(
-      "📊 New readings:",
-      newMinute.length
-    );
-
-    console.log(
-      "🧹 New after filtering:",
-      cleanNew.length
-    );
-
-    console.log(
-      "📊 Old Average:",
-      oldAverage.toFixed(2)
-    );
-
-    console.log(
-      "📊 New Average:",
-      newAverage.toFixed(2)
-    );
-
-    console.log(
-      "📉 Weight Difference:",
-      weightDifference.toFixed(2)
-    );
-
-    console.log(
-      "⏱️ Time Difference:",
-      timeDifference.toFixed(2),
-      "minutes"
-    );
-
-    console.log(
-      "💧 Consumption Rate:",
-      consumptionRate.toFixed(2),
-      "ml/min"
-    );
-
-    console.log(
-      "🤖 AI Input:",
+      "🤖 AI Prediction Input:",
       aiInput
     );
 
-    console.log("================================");
+    console.log(
+      "📊 Sensor readings:",
+      readings.length,
+      "| Clean readings:",
+      cleanReadings.length
+    );
 
+    console.log(
+      "💧 Weight difference:",
+      weightDifference.toFixed(2),
+      "ml"
+    );
 
-    // ================= RUN AI =================
+    console.log(
+      "⏱️ Time difference:",
+      timeDifference.toFixed(2),
+      "min"
+    );
+
+    console.log(
+      "📉 Consumption rate:",
+      consumptionRate.toFixed(3),
+      "ml/min"
+    );
+
+    // =====================================================
+    // Run AI prediction
+    // =====================================================
 
     const prediction =
       aiModel.predict(aiInput);
@@ -549,29 +528,12 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
     let predictedRemainingTime =
       Number(prediction[0]);
 
-
-    // ================= EMPTY IV =================
-
+    // If IV is empty
     if (
       Number(patient.remainingML || 0) <= 0
     ) {
-
       predictedRemainingTime = 0;
-
     }
-
-
-    // ================= INVALID PREDICTION =================
-
-    if (
-      !Number.isFinite(predictedRemainingTime) ||
-      predictedRemainingTime < 0
-    ) {
-
-      predictedRemainingTime = 0;
-
-    }
-
 
     console.log(
       "🤖 AI Predicted Time:",
@@ -579,8 +541,9 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
       "minutes"
     );
 
-
-    // ================= RESPONSE =================
+    // =====================================================
+    // Response
+    // =====================================================
 
     res.json({
 
@@ -606,6 +569,12 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
           rateChange.toFixed(2)
         ),
 
+      cleanReadings:
+        cleanReadings.length,
+
+      totalReadings:
+        readings.length,
+
       predictedRemainingTime:
         Number(
           Math.max(
@@ -613,22 +582,6 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
             predictedRemainingTime
           ).toFixed(2)
         ),
-
-      oldAverage:
-        Number(
-          oldAverage.toFixed(2)
-        ),
-
-      newAverage:
-        Number(
-          newAverage.toFixed(2)
-        ),
-
-      filteredOldReadings:
-        cleanOld.length,
-
-      filteredNewReadings:
-        cleanNew.length,
 
       unit: "minutes"
 
@@ -642,11 +595,8 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
     );
 
     res.status(500).json({
-
       success: false,
-
       message: "AI prediction error"
-
     });
 
   }

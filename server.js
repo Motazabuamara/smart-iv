@@ -281,25 +281,15 @@ async function trainAIModel() {
 
 
 // ================= AI PREDICTION API =================
+// ============================================================
+// 🧠 SMART ETA ENGINE - Stable IV Consumption Prediction
+// ============================================================
 
 app.get("/api/ai/predict/:patientId", async (req, res) => {
-
   try {
+    const patientId = String(req.params.patientId);
 
-    if (!aiModel) {
-      return res.status(503).json({
-        success: false,
-        message: "AI model is not trained yet"
-      });
-    }
-
-    const patientId = req.params.patientId;
-
-    // ================= GET PATIENT =================
-
-    const patient = await Patient.findOne({
-      patientId: patientId
-    });
+    const patient = await Patient.findOne({ patientId });
 
     if (!patient) {
       return res.status(404).json({
@@ -308,304 +298,359 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
       });
     }
 
-    // =====================================================
-    // GET LAST 60 READINGS
-    // =====================================================
+    // ------------------------------------------------------------
+    // 1️⃣ Get recent sensor history
+    // ------------------------------------------------------------
 
     const readings = await SensorReading.find({
-      patientId: patientId
+      patientId
     })
       .sort({ timestamp: -1 })
-      .limit(60);
+      .limit(120);
 
     if (readings.length < 10) {
-
       return res.json({
         success: true,
         predictionAvailable: false,
-        message: "Not enough sensor data for prediction"
+        message: "Collecting more sensor data..."
       });
-
     }
 
-    // Oldest -> Newest
-    const orderedReadings = [...readings].reverse();
+    // Oldest → newest
+    const ordered = [...readings].reverse();
 
-    // =====================================================
-    // STEP 1
-    // REMOVE UPWARD SENSOR FLUCTUATIONS
-    // =====================================================
+    // ------------------------------------------------------------
+    // 2️⃣ Remove impossible / invalid readings
+    // ------------------------------------------------------------
 
-    const cleanReadings = [];
+    const clean = [];
 
-    cleanReadings.push(orderedReadings[0]);
+    for (const reading of ordered) {
+      const weight = Number(reading.weight);
+      const timestamp = new Date(reading.timestamp).getTime();
 
-    for (let i = 1; i < orderedReadings.length; i++) {
+      if (!Number.isFinite(weight)) continue;
+      if (!Number.isFinite(timestamp)) continue;
+      if (weight < 0) continue;
 
-      const previous =
-        Number(cleanReadings[cleanReadings.length - 1].weight);
-
-      const current =
-        Number(orderedReadings[i].weight);
-
-      // Liquid should normally decrease.
-      // If it increases, ignore that reading.
-      if (current <= previous) {
-
-        cleanReadings.push(
-          orderedReadings[i]
-        );
-
-      } else {
-
-        console.log(
-          "🗑️ Removed sensor fluctuation:",
-          current,
-          ">",
-          previous
-        );
-
+      if (clean.length === 0) {
+        clean.push({
+          weight,
+          timestamp
+        });
+        continue;
       }
 
+      const previous = clean[clean.length - 1];
+
+      /*
+       * IV fluid should normally decrease.
+       *
+       * If weight suddenly increases, it is probably:
+       * - load-cell noise
+       * - vibration
+       * - bag movement
+       * - someone touching the stand
+       *
+       * Ignore that reading.
+       */
+      if (weight > previous.weight) {
+        continue;
+      }
+
+      // Ignore unrealistically large drops
+      const drop = previous.weight - weight;
+      const minutes =
+        (timestamp - previous.timestamp) / 60000;
+
+      if (minutes <= 0) continue;
+
+      const rate = drop / minutes;
+
+      // Ignore impossible consumption rates
+      if (rate > 30) {
+        continue;
+      }
+
+      clean.push({
+        weight,
+        timestamp
+      });
     }
 
-    // Need enough clean readings
-    if (cleanReadings.length < 5) {
-
+    if (clean.length < 5) {
       return res.json({
         success: true,
         predictionAvailable: false,
-        message: "Not enough stable readings"
+        message: "Not enough stable sensor data"
       });
-
     }
 
-    // =====================================================
-    // STEP 2
-    // CALCULATE CONSUMPTION RATE FROM CLEAN DATA
-    // =====================================================
+    // ------------------------------------------------------------
+    // 3️⃣ Build consumption-rate samples
+    // ------------------------------------------------------------
 
     const rates = [];
 
-    for (let i = 1; i < cleanReadings.length; i++) {
+    for (let i = 1; i < clean.length; i++) {
+      const previous = clean[i - 1];
+      const current = clean[i];
 
-      const previous =
-        Number(cleanReadings[i - 1].weight);
+      const minutes =
+        (current.timestamp - previous.timestamp) / 60000;
 
-      const current =
-        Number(cleanReadings[i].weight);
+      if (minutes <= 0) continue;
 
-      const weightDifference =
-        previous - current;
+      const consumed =
+        previous.weight - current.weight;
 
-      const timeDifference =
-        (
-          cleanReadings[i].timestamp -
-          cleanReadings[i - 1].timestamp
-        ) / 60000;
+      if (consumed <= 0) continue;
+
+      const rate = consumed / minutes;
 
       if (
-        weightDifference > 0 &&
-        timeDifference > 0
+        Number.isFinite(rate) &&
+        rate > 0 &&
+        rate <= 30
       ) {
-
-        const rate =
-          weightDifference /
-          timeDifference;
-
-        // Ignore impossible spikes
-        if (
-          Number.isFinite(rate) &&
-          rate > 0 &&
-          rate < 30
-        ) {
-
-          rates.push(rate);
-
-        }
-
+        rates.push({
+          rate,
+          timestamp: current.timestamp
+        });
       }
-
     }
 
-    if (rates.length < 3) {
-
+    if (rates.length < 5) {
       return res.json({
         success: true,
         predictionAvailable: false,
-        message: "Not enough valid consumption rates"
+        message: "Consumption rate is not stable yet"
       });
-
     }
 
-    // =====================================================
-    // STEP 3
-    // REMOVE EXTREME RATE VALUES
-    // =====================================================
+    // ------------------------------------------------------------
+    // 4️⃣ Remove extreme rate spikes
+    // ------------------------------------------------------------
 
-    rates.sort((a, b) => a - b);
+    const sortedRates = rates
+      .map(x => x.rate)
+      .sort((a, b) => a - b);
 
-    const lowerIndex =
-      Math.floor(rates.length * 0.10);
+    const median =
+      sortedRates[Math.floor(sortedRates.length / 2)];
 
-    const upperIndex =
-      Math.ceil(rates.length * 0.90);
+    /*
+     * Keep rates reasonably close to the median.
+     *
+     * This prevents one bad sensor reading from turning
+     * a 3-hour ETA into 15 hours or 20 minutes.
+     */
 
-    const stableRates =
-      rates.slice(
-        lowerIndex,
-        upperIndex
+    const stableRates = rates.filter(item => {
+      return (
+        item.rate >= median * 0.35 &&
+        item.rate <= median * 2.5
       );
+    });
 
-    // =====================================================
-    // STEP 4
-    // AVERAGE STABLE RATE
-    // =====================================================
+    if (stableRates.length < 5) {
+      return res.json({
+        success: true,
+        predictionAvailable: false,
+        message: "Waiting for a stable consumption trend"
+      });
+    }
 
-    const totalRate =
-      stableRates.reduce(
-        (sum, rate) => sum + rate,
+    // ------------------------------------------------------------
+    // 5️⃣ Weighted Moving Average
+    // ------------------------------------------------------------
+
+    /*
+     * Recent measurements have more importance.
+     *
+     * Older:
+     *     lower weight
+     *
+     * Newer:
+     *     higher weight
+     */
+
+    let weightedSum = 0;
+    let totalWeight = 0;
+
+    const recentRates =
+      stableRates.slice(-60);
+
+    recentRates.forEach((item, index) => {
+
+      const weight = index + 1;
+
+      weightedSum += item.rate * weight;
+      totalWeight += weight;
+
+    });
+
+    let consumptionRate =
+      weightedSum / totalWeight;
+
+    // ------------------------------------------------------------
+    // 6️⃣ Extra smoothing
+    // ------------------------------------------------------------
+
+    /*
+     * Prevent the rate itself from moving too aggressively.
+     */
+
+    const recentSimpleAverage =
+      recentRates.reduce(
+        (sum, item) => sum + item.rate,
         0
-      );
+      ) / recentRates.length;
 
-    const averageConsumptionRate =
-      totalRate / stableRates.length;
+    consumptionRate =
+      (consumptionRate * 0.7) +
+      (recentSimpleAverage * 0.3);
 
-    // =====================================================
-    // STEP 5
-    // CALCULATE ETA DIRECTLY
-    // =====================================================
+    // Safety limits
+    consumptionRate =
+      Math.max(0.01, consumptionRate);
+
+    // ------------------------------------------------------------
+    // 7️⃣ Calculate remaining fluid
+    // ------------------------------------------------------------
 
     const remainingML =
-      Number(patient.remainingML || 0);
+      Math.max(
+        0,
+        Number(patient.remainingML || 0)
+      );
+
+    // ------------------------------------------------------------
+    // 8️⃣ Calculate ETA
+    // ------------------------------------------------------------
 
     let predictedRemainingTime = 0;
 
     if (
       remainingML > 0 &&
-      averageConsumptionRate > 0
+      consumptionRate > 0
     ) {
-
       predictedRemainingTime =
-        remainingML /
-        averageConsumptionRate;
-
+        remainingML / consumptionRate;
     }
 
-    // =====================================================
-    // SAFETY CHECK
-    // =====================================================
+    // ------------------------------------------------------------
+    // 9️⃣ Safety limits
+    // ------------------------------------------------------------
 
-    if (
-      !Number.isFinite(predictedRemainingTime) ||
-      predictedRemainingTime < 0
-    ) {
+    predictedRemainingTime =
+      Math.max(
+        0,
+        Math.min(
+          predictedRemainingTime,
+          1440
+        )
+      );
 
-      predictedRemainingTime = 0;
+    // ------------------------------------------------------------
+    // 🔟 Debug information
+    // ------------------------------------------------------------
 
-    }
+    console.log("");
+    console.log("====================================");
+    console.log("🧠 SMART IV ETA ENGINE");
+    console.log("====================================");
 
-    // =====================================================
-    // LOGS
-    // =====================================================
-
-    console.log("================================");
-    console.log("🤖 SMART IV ETA");
     console.log(
-      "📊 Total readings:",
+      "📊 Raw readings:",
       readings.length
     );
+
     console.log(
       "🧹 Clean readings:",
-      cleanReadings.length
+      clean.length
     );
+
     console.log(
-      "📉 Valid rates:",
+      "📉 Rate samples:",
       rates.length
     );
+
     console.log(
       "📊 Stable rates:",
       stableRates.length
     );
+
     console.log(
       "💧 Remaining:",
       remainingML.toFixed(2),
       "ml"
     );
+
     console.log(
-      "⚡ Average consumption:",
-      averageConsumptionRate.toFixed(3),
+      "⚡ Consumption:",
+      consumptionRate.toFixed(4),
       "ml/min"
     );
+
     console.log(
       "⏱️ ETA:",
       predictedRemainingTime.toFixed(2),
       "minutes"
     );
-    console.log("================================");
 
-    // =====================================================
-    // RESPONSE
-    // =====================================================
+    console.log("====================================");
+    console.log("");
 
-    res.json({
+    // ------------------------------------------------------------
+    // 1️⃣1️⃣ Return result
+    // ------------------------------------------------------------
 
+    return res.json({
       success: true,
-
       predictionAvailable: true,
 
-      patientId: patientId,
+      patientId,
 
       remainingML:
+
         Number(
           remainingML.toFixed(2)
         ),
 
-      percentage:
-        Number(
-          patient.percentage || 0
-        ),
-
       consumptionRate:
+
         Number(
-          averageConsumptionRate.toFixed(2)
+          consumptionRate.toFixed(4)
         ),
 
       predictedRemainingTime:
+
         Number(
           predictedRemainingTime.toFixed(2)
         ),
 
       cleanReadings:
-        cleanReadings.length,
-
-      validRates:
-        rates.length,
+        clean.length,
 
       stableRates:
         stableRates.length,
 
       unit: "minutes"
-
     });
 
   } catch (error) {
 
     console.error(
-      "❌ AI prediction error:",
+      "❌ Smart ETA Error:",
       error
     );
 
-    res.status(500).json({
-
+    return res.status(500).json({
       success: false,
-
-      message: "AI prediction error"
-
+      message: "Smart ETA calculation error"
     });
-
   }
-
 });
 
 

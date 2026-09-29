@@ -1966,18 +1966,7 @@ socket.on("newNurseMessage", (data) => {
     // AI monitoring
     updateAI(percentage);
 
-    updateAIPredictionIfNeeded(currentPatient.patientId);
-
-
-
-setInterval(() => {
-    if (currentPatient && currentPatient.patientId) {
-        console.log("🤖 Refreshing AI prediction...");
-        updateAIPrediction(currentPatient.patientId);
-    }
-}, 60000);
-
-
+   
     // Last update
     document.getElementById("lastUpdate").innerText =
         "Last update: " +
@@ -1990,6 +1979,26 @@ setInterval(() => {
     );
 });
   
+  // ================= AI PREDICTION REFRESH =================
+
+setInterval(() => {
+
+    if (
+        currentPatient &&
+        currentPatient.patientId
+    ) {
+
+        console.log(
+            "🤖 Refreshing AI prediction..."
+        );
+
+        updateAIPrediction(
+            currentPatient.patientId
+        );
+
+    }
+
+}, 60000);
 
 
 </script>

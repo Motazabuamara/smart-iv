@@ -280,7 +280,6 @@ async function trainAIModel() {
 }
 
 
-
 // ================= AI PREDICTION API =================
 
 app.get("/api/ai/predict/:patientId", async (req, res) => {
@@ -296,7 +295,8 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
 
     const patientId = req.params.patientId;
 
-    // Get patient
+    // ================= GET PATIENT =================
+
     const patient = await Patient.findOne({
       patientId: patientId
     });
@@ -309,7 +309,7 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
     }
 
     // =====================================================
-    // Get latest 60 sensor readings
+    // GET LAST 60 READINGS
     // =====================================================
 
     const readings = await SensorReading.find({
@@ -318,231 +318,234 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
       .sort({ timestamp: -1 })
       .limit(60);
 
-    if (readings.length < 5) {
+    if (readings.length < 10) {
+
       return res.json({
         success: true,
         predictionAvailable: false,
-        message: "Not enough sensor data for AI prediction"
+        message: "Not enough sensor data for prediction"
       });
+
     }
 
-    // Reverse so readings go from OLD -> NEW
+    // Oldest -> Newest
     const orderedReadings = [...readings].reverse();
 
     // =====================================================
-    // Remove readings that go UP
-    // We only want real fluid decrease
+    // STEP 1
+    // REMOVE UPWARD SENSOR FLUCTUATIONS
     // =====================================================
 
     const cleanReadings = [];
 
-    for (let i = 0; i < orderedReadings.length; i++) {
+    cleanReadings.push(orderedReadings[0]);
 
-      const current = orderedReadings[i];
-
-      if (cleanReadings.length === 0) {
-        cleanReadings.push(current);
-        continue;
-      }
+    for (let i = 1; i < orderedReadings.length; i++) {
 
       const previous =
-        cleanReadings[cleanReadings.length - 1];
+        Number(cleanReadings[cleanReadings.length - 1].weight);
 
-      // If current weight is lower or equal,
-      // this represents real fluid consumption.
-      if (current.weight <= previous.weight) {
-        cleanReadings.push(current);
+      const current =
+        Number(orderedReadings[i].weight);
+
+      // Liquid should normally decrease.
+      // If it increases, ignore that reading.
+      if (current <= previous) {
+
+        cleanReadings.push(
+          orderedReadings[i]
+        );
+
+      } else {
+
+        console.log(
+          "🗑️ Removed sensor fluctuation:",
+          current,
+          ">",
+          previous
+        );
+
       }
 
-      // If current.weight > previous.weight,
-      // ignore it because it is sensor fluctuation.
     }
 
     // Need enough clean readings
     if (cleanReadings.length < 5) {
+
       return res.json({
         success: true,
         predictionAvailable: false,
-        message: "Not enough stable sensor readings"
+        message: "Not enough stable readings"
       });
+
     }
 
     // =====================================================
-    // Calculate consumption using clean readings
+    // STEP 2
+    // CALCULATE CONSUMPTION RATE FROM CLEAN DATA
     // =====================================================
 
-    const firstReading =
-      cleanReadings[0];
+    const rates = [];
 
-    const lastReading =
-      cleanReadings[cleanReadings.length - 1];
+    for (let i = 1; i < cleanReadings.length; i++) {
 
-    const weightDifference =
-      firstReading.weight -
-      lastReading.weight;
+      const previous =
+        Number(cleanReadings[i - 1].weight);
 
-    const timeDifference =
-      (lastReading.timestamp -
-        firstReading.timestamp) / 60000;
+      const current =
+        Number(cleanReadings[i].weight);
 
-    let consumptionRate = 0;
+      const weightDifference =
+        previous - current;
 
-    if (
-      weightDifference > 0 &&
-      timeDifference > 0
-    ) {
-      consumptionRate =
-        weightDifference /
-        timeDifference;
-    }
-
-    // =====================================================
-    // Prevent crazy rates caused by sensor noise
-    // =====================================================
-
-    if (
-      !Number.isFinite(consumptionRate) ||
-      consumptionRate < 0
-    ) {
-      consumptionRate = 0;
-    }
-
-    // =====================================================
-    // Calculate rate change
-    // =====================================================
-
-    let rateChange = 0;
-
-    if (cleanReadings.length >= 10) {
-
-      const middleIndex =
-        Math.floor(cleanReadings.length / 2);
-
-      const middleReading =
-        cleanReadings[middleIndex];
-
-      const firstHalfWeight =
-        firstReading.weight -
-        middleReading.weight;
-
-      const firstHalfTime =
-        (middleReading.timestamp -
-          firstReading.timestamp) / 60000;
-
-      const secondHalfWeight =
-        middleReading.weight -
-        lastReading.weight;
-
-      const secondHalfTime =
-        (lastReading.timestamp -
-          middleReading.timestamp) / 60000;
-
-      let firstRate = 0;
-      let secondRate = 0;
+      const timeDifference =
+        (
+          cleanReadings[i].timestamp -
+          cleanReadings[i - 1].timestamp
+        ) / 60000;
 
       if (
-        firstHalfWeight > 0 &&
-        firstHalfTime > 0
+        weightDifference > 0 &&
+        timeDifference > 0
       ) {
-        firstRate =
-          firstHalfWeight /
-          firstHalfTime;
+
+        const rate =
+          weightDifference /
+          timeDifference;
+
+        // Ignore impossible spikes
+        if (
+          Number.isFinite(rate) &&
+          rate > 0 &&
+          rate < 30
+        ) {
+
+          rates.push(rate);
+
+        }
+
       }
 
-      if (
-        secondHalfWeight > 0 &&
-        secondHalfTime > 0
-      ) {
-        secondRate =
-          secondHalfWeight /
-          secondHalfTime;
-      }
+    }
 
-      rateChange =
-        secondRate -
-        firstRate;
+    if (rates.length < 3) {
+
+      return res.json({
+        success: true,
+        predictionAvailable: false,
+        message: "Not enough valid consumption rates"
+      });
+
     }
 
     // =====================================================
-    // AI INPUT
+    // STEP 3
+    // REMOVE EXTREME RATE VALUES
     // =====================================================
 
-    const timeInterval =
-      timeDifference > 0
-        ? timeDifference
-        : 1;
+    rates.sort((a, b) => a - b);
 
-    const aiInput = [[
+    const lowerIndex =
+      Math.floor(rates.length * 0.10);
 
-      Number(patient.totalML || 0),
+    const upperIndex =
+      Math.ceil(rates.length * 0.90);
 
-      Number(patient.remainingML || 0),
+    const stableRates =
+      rates.slice(
+        lowerIndex,
+        upperIndex
+      );
 
-      Number(patient.percentage || 0),
+    // =====================================================
+    // STEP 4
+    // AVERAGE STABLE RATE
+    // =====================================================
 
-      Number(consumptionRate || 0),
+    const totalRate =
+      stableRates.reduce(
+        (sum, rate) => sum + rate,
+        0
+      );
 
-      Number(rateChange || 0),
+    const averageConsumptionRate =
+      totalRate / stableRates.length;
 
-      Number(timeInterval || 0)
+    // =====================================================
+    // STEP 5
+    // CALCULATE ETA DIRECTLY
+    // =====================================================
 
-    ]];
+    const remainingML =
+      Number(patient.remainingML || 0);
 
+    let predictedRemainingTime = 0;
+
+    if (
+      remainingML > 0 &&
+      averageConsumptionRate > 0
+    ) {
+
+      predictedRemainingTime =
+        remainingML /
+        averageConsumptionRate;
+
+    }
+
+    // =====================================================
+    // SAFETY CHECK
+    // =====================================================
+
+    if (
+      !Number.isFinite(predictedRemainingTime) ||
+      predictedRemainingTime < 0
+    ) {
+
+      predictedRemainingTime = 0;
+
+    }
+
+    // =====================================================
+    // LOGS
+    // =====================================================
+
+    console.log("================================");
+    console.log("🤖 SMART IV ETA");
     console.log(
-      "🤖 AI Prediction Input:",
-      aiInput
+      "📊 Total readings:",
+      readings.length
     );
-
     console.log(
-      "📊 Sensor readings:",
-      readings.length,
-      "| Clean readings:",
+      "🧹 Clean readings:",
       cleanReadings.length
     );
-
     console.log(
-      "💧 Weight difference:",
-      weightDifference.toFixed(2),
+      "📉 Valid rates:",
+      rates.length
+    );
+    console.log(
+      "📊 Stable rates:",
+      stableRates.length
+    );
+    console.log(
+      "💧 Remaining:",
+      remainingML.toFixed(2),
       "ml"
     );
-
     console.log(
-      "⏱️ Time difference:",
-      timeDifference.toFixed(2),
-      "min"
-    );
-
-    console.log(
-      "📉 Consumption rate:",
-      consumptionRate.toFixed(3),
+      "⚡ Average consumption:",
+      averageConsumptionRate.toFixed(3),
       "ml/min"
     );
-
-    // =====================================================
-    // Run AI prediction
-    // =====================================================
-
-    const prediction =
-      aiModel.predict(aiInput);
-
-    let predictedRemainingTime =
-      Number(prediction[0]);
-
-    // If IV is empty
-    if (
-      Number(patient.remainingML || 0) <= 0
-    ) {
-      predictedRemainingTime = 0;
-    }
-
     console.log(
-      "🤖 AI Predicted Time:",
-      predictedRemainingTime,
+      "⏱️ ETA:",
+      predictedRemainingTime.toFixed(2),
       "minutes"
     );
+    console.log("================================");
 
     // =====================================================
-    // Response
+    // RESPONSE
     // =====================================================
 
     res.json({
@@ -554,34 +557,33 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
       patientId: patientId,
 
       remainingML:
-        Number(patient.remainingML || 0),
+        Number(
+          remainingML.toFixed(2)
+        ),
 
       percentage:
-        Number(patient.percentage || 0),
+        Number(
+          patient.percentage || 0
+        ),
 
       consumptionRate:
         Number(
-          consumptionRate.toFixed(2)
+          averageConsumptionRate.toFixed(2)
         ),
 
-      rateChange:
+      predictedRemainingTime:
         Number(
-          rateChange.toFixed(2)
+          predictedRemainingTime.toFixed(2)
         ),
 
       cleanReadings:
         cleanReadings.length,
 
-      totalReadings:
-        readings.length,
+      validRates:
+        rates.length,
 
-      predictedRemainingTime:
-        Number(
-          Math.max(
-            0,
-            predictedRemainingTime
-          ).toFixed(2)
-        ),
+      stableRates:
+        stableRates.length,
 
       unit: "minutes"
 
@@ -595,8 +597,11 @@ app.get("/api/ai/predict/:patientId", async (req, res) => {
     );
 
     res.status(500).json({
+
       success: false,
+
       message: "AI prediction error"
+
     });
 
   }

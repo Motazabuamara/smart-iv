@@ -1173,105 +1173,139 @@ app.get("/api/stand/:standId", async (req, res) => {
 });
 
 
-// ================= AI CONSUMPTION RATE =================
+// ================= ADVANCED AI IV CONSUMPTION & PREDICTOR ENGINE =================
 
 app.get("/api/ai/consumption/:patientId", async (req, res) => {
-
   try {
-
     const patientId = req.params.patientId;
 
-    // Get latest sensor readings
-    const readings = await SensorReading.find({
-      patientId: patientId
-    })
+    // 1. Fetch the latest 35 readings to get a wide and stable time window for analysis
+    const readings = await SensorReading.find({ patientId: patientId })
       .sort({ timestamp: -1 })
-      .limit(20);
+      .limit(35);
 
-    // Need at least 2 readings
-    if (readings.length < 2) {
+    if (readings.length < 8) {
       return res.json({
         success: true,
         consumptionRate: 0,
-        message: "Not enough sensor data"
+        remainingMinutes: null,
+        message: "Gathering enough sensor data for stabilization..."
       });
     }
 
-    // Reverse so readings are oldest → newest
+    // Sort readings in ascending order (from oldest to newest)
     readings.reverse();
 
-    let totalConsumed = 0;
-    let totalTimeMinutes = 0;
+    // 2. Data Cleaning Step (Outlier Removal & Anti-Jitter Filtering)
+    // Filters out abrupt jumps, sensor noise, or false weight increases due to bed vibrations.
+    let cleanPoints = [];
+    let baseTime = new Date(readings[0].timestamp).getTime();
+
+    // Use the first point as our time reference offset (in minutes)
+    cleanPoints.push({
+      x: 0, 
+      y: Number(readings[0].weight)
+    });
 
     for (let i = 1; i < readings.length; i++) {
+      const prev = readings[i - 1];
+      const curr = readings[i];
 
-      const previous = readings[i - 1];
-      const current = readings[i];
+      const timeDiffMin = (new Date(curr.timestamp).getTime() - new Date(prev.timestamp).getTime()) / 60000;
+      const weightDiff = prev.weight - curr.weight; // Consumption amount (should be positive)
 
-      const weightDifference =
-        previous.weight - current.weight;
-
-      const timeDifference =
-        (current.timestamp - previous.timestamp) / 60000;
-
-      // Ignore invalid values
-      if (
-        weightDifference > 0 &&
-        timeDifference > 0
-      ) {
-
-        totalConsumed += weightDifference;
-        totalTimeMinutes += timeDifference;
-
+      // Strict acceptance conditions to eliminate fluctuation:
+      // - Logical time frame (between 0 and 10 minutes apart)
+      // - Weight either remains steady or decreases normally (less than 15ml drop to avoid sensor glitches)
+      if (timeDiffMin > 0 && timeDiffMin < 10) {
+        if (weightDiff >= 0 && weightDiff < 15) {
+          let timeOffset = (new Date(curr.timestamp).getTime() - baseTime) / 60000;
+          cleanPoints.push({
+            x: timeOffset,
+            y: Number(curr.weight)
+          });
+        } else if (weightDiff < 0) {
+          // If the weight falsely increases (due to vibration/touch), clamp it to the previous weight
+          // to prevent negative rates and keep the graph stable.
+          let timeOffset = (new Date(curr.timestamp).getTime() - baseTime) / 60000;
+          cleanPoints.push({
+            x: timeOffset,
+            y: Number(prev.weight) 
+          });
+        }
       }
     }
 
-    if (totalTimeMinutes <= 0) {
+    if (cleanPoints.length < 5) {
       return res.json({
         success: true,
         consumptionRate: 0,
-        message: "Unable to calculate consumption rate"
+        remainingMinutes: null,
+        message: "Sensor readings are currently unstable"
       });
     }
 
-    const consumptionRate =
-      totalConsumed / totalTimeMinutes;
+    // 3. Linear Regression Algorithm (Least Squares Method)
+    // Fits an optimal statistical line through all clean points, smoothing out any random noise and calculating precise slope.
+    let n = cleanPoints.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
 
+    for (let p of cleanPoints) {
+      sumX += p.x;
+      sumY += p.y;
+      sumXY += (p.x * p.y);
+      sumXX += (p.x * p.x);
+    }
+
+    let denominator = (n * sumXX - sumX * sumX);
+    if (denominator === 0) {
+      return res.json({
+        success: true,
+        consumptionRate: 0,
+        remainingMinutes: null,
+        message: "Error calculating infusion rate"
+      });
+    }
+
+    // The slope represents weight loss per minute (ml/min). 
+    // We convert it to a positive consumption rate value.
+    let slope = (n * sumXY - sumX * sumY) / denominator;
+    let consumptionRate = -slope; 
+
+    // If the rate is negative or extremely close to zero (paused or stopped)
+    if (consumptionRate < 0.01) {
+      consumptionRate = 0;
+    }
+
+    // 4. Current remaining volume/weight of the solution (from the latest clean point)
+    const currentVolume = Math.max(0, cleanPoints[cleanPoints.length - 1].y);
+
+    // 5. Calculate remaining time accurately and stably
+    let remainingTimeMinutes = null;
+    if (consumptionRate > 0) {
+      remainingTimeMinutes = currentVolume / consumptionRate;
+    }
+
+    // Return the response cleanly and stably to the frontend interface
     res.json({
-
       success: true,
-
       patientId: patientId,
-
-      consumptionRate:
-        Number(consumptionRate.toFixed(2)),
-
+      consumptionRate: Number(consumptionRate.toFixed(2)), // ml / minute
       unit: "ml/min",
-
-      readingsUsed: readings.length,
-
-      totalConsumed:
-        Number(totalConsumed.toFixed(2)),
-
-      totalTimeMinutes:
-        Number(totalTimeMinutes.toFixed(2))
-
+      remainingVolume: Number(currentVolume.toFixed(2)),   // Remaining ml
+      remainingTimeMinutes: remainingTimeMinutes ? Math.round(remainingTimeMinutes) : null, // Remaining minutes
+      readingsUsed: cleanPoints.length,
+      status: consumptionRate > 0 ? "IV Flow Normal" : "IV Flow Paused or Stopped",
+      message: "Calculated successfully with high stability"
     });
 
   } catch (err) {
-
-    console.error(
-      "AI consumption rate error:",
-      err
-    );
-
+    console.error("AI advanced consumption rate error:", err);
     res.status(500).json({
       success: false,
-      message: "AI calculation error"
+      message: "Internal AI calculation error"
     });
-
   }
-
 });
 
 // ================= GENERATE AI TRAINING DATA =================
